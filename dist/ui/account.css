@@ -1,0 +1,142 @@
+/* The existing dialog, panel, field, badge and button classes own typography.
+   This dialog has no derived spacing scale; names below own its new layout. */
+.account-dialog {
+  --account-space-small: 8px;
+  --account-space-field: 16px;
+  --account-space-section: 20px;
+  --account-card-padding: 16px;
+  --account-card-radius: 8px;
+  --account-avatar-size: 52px;
+  --account-watermark-size: clamp(1.1rem, 4.8vw, 1.6rem);
+  max-height: 90dvh;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+
+.account-dialog #accountDialogTitle:focus {
+  outline: none;
+}
+
+.account-dialog .dialog-head .icon-btn {
+  flex-shrink: 0;
+}
+
+.account-auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--account-space-small);
+  margin-bottom: var(--account-space-section);
+}
+
+.account-form {
+  display: grid;
+  gap: var(--account-space-field);
+}
+
+.account-form > p,
+.account-summary > p,
+.account-dummy-body p {
+  margin: 0;
+}
+
+.account-form .hint,
+.account-form .field-error {
+  margin-top: calc(-1 * var(--account-space-small));
+}
+
+.account-form .field-error:empty {
+  display: none;
+}
+
+.account-dialog .field-error {
+  color: #a12430;
+}
+
+.account-actions {
+  display: grid;
+  gap: var(--account-space-small);
+}
+
+.account-summary {
+  display: grid;
+  justify-items: start;
+  gap: var(--account-space-small);
+}
+
+.account-note,
+.account-dummy-card {
+  border: 1px solid var(--border);
+  border-radius: var(--account-card-radius);
+  padding: var(--account-card-padding);
+  background: var(--paper);
+}
+
+.account-status {
+  color: var(--pink);
+  background: var(--pink-light);
+  white-space: normal;
+}
+
+.account-verification-status {
+  margin-bottom: var(--account-space-field);
+}
+
+.account-dummy-card {
+  display: grid;
+  gap: var(--account-space-field);
+}
+
+.account-dummy-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--account-space-small);
+}
+
+.account-dummy-body {
+  display: flex;
+  align-items: center;
+  gap: var(--account-space-field);
+}
+
+.account-dummy-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 var(--account-avatar-size);
+  width: var(--account-avatar-size);
+  height: var(--account-avatar-size);
+  border-radius: var(--account-card-radius);
+  background: var(--pink-light);
+  color: var(--pink);
+}
+
+.account-dummy-watermark {
+  display: block;
+  border-top: 1px solid var(--border);
+  padding-top: var(--account-space-field);
+  color: var(--pink);
+  font-size: var(--account-watermark-size);
+  text-align: center;
+}
+
+.account-dialog .account-card-note {
+  margin-top: var(--account-space-small);
+  margin-bottom: var(--account-space-section);
+}
+
+.account-dialog .account-storage-note {
+  margin-top: var(--account-space-section);
+  margin-bottom: 0;
+}
+
+@media (max-width: 420px) {
+  .account-dialog {
+    --account-card-padding: 12px;
+  }
+
+  .account-dummy-body {
+    align-items: flex-start;
+  }
+}
