@@ -86,7 +86,10 @@ a:hover {
   --muted: #6d626c;
   --border: #e4dce2;
   --paper: #fff;
-  --green: #35664c
+  --green: #35664c;
+  --ink: #29252a;
+  --focus: #794ac1;
+  --space-panel: 24px
 }
 
 button,
@@ -3713,4 +3716,54 @@ footer nav {
   .mode-option {
     padding: 22px;
   }
+}
+
+/* Shared small-screen and account navigation layout. */
+.detail-grid > div,
+.checkout-grid > div,
+.checkout-grid > aside {
+  min-width: 0;
+}
+
+.account-gate {
+  margin-block: var(--space-panel);
+  display: grid;
+  gap: var(--space-panel);
+}
+
+.summary-row > strong {
+  overflow-wrap: anywhere;
+}
+
+.detail-grid .summary-row > strong:not(.num) {
+  white-space: normal;
+  min-width: 0;
+  text-align: right;
+}
+
+.profile-review,
+.profile-review p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--pink);
+  white-space: nowrap;
+}
+
+.logo-icon {
+  width: 38px;
+  height: auto;
+  flex: none;
+  object-fit: contain;
+}
+
+@media (max-width: 760px) {
+  .navright > .btn { max-width: 150px; overflow-wrap: anywhere; }
+  .navlinks { justify-content: flex-start; }
+  .logo-icon { width: 30px; }
 }
