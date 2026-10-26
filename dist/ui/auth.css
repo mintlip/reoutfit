@@ -1,0 +1,42 @@
+/* Imported into the shared components layer by styles/tailwind.css. */
+  .auth-page {
+    --duration-photo: 650ms;
+    --account-space-small: 0.5rem;
+    --account-space-field: 1rem;
+    --account-space-section: 1.5rem;
+    @apply py-6 md:py-10;
+  }
+  .auth-layout { @apply grid min-w-0 gap-8 lg:grid-cols-2 lg:items-stretch lg:gap-16; }
+  .auth-visual { @apply relative hidden min-h-[42rem] overflow-hidden rounded-panel bg-pink-soft lg:block; }
+  .auth-slide { @apply absolute inset-0 h-full w-full object-cover opacity-0; transition: opacity var(--duration-photo) ease; }
+  .auth-slide.is-active { @apply opacity-100; }
+  .auth-visual::after { content: ''; @apply pointer-events-none absolute inset-0; background: linear-gradient(180deg, transparent 30%, rgb(30 12 24 / 22%) 55%, rgb(30 12 24 / 82%) 100%); }
+  .auth-visual-copy { @apply absolute inset-x-0 bottom-24 z-10 px-10 text-white; }
+  .auth-visual-copy h2 { @apply mb-4 mt-5 text-5xl font-bold leading-tight tracking-tight text-white; }
+  .auth-visual-copy p { @apply m-0 text-base leading-relaxed text-white; }
+  .auth-visual-tag { @apply inline-flex rounded-full border border-white/40 bg-black/20 px-4 py-2 text-xs font-bold text-white; }
+  .auth-slideshow-controls { @apply absolute inset-x-0 bottom-0 z-10 flex items-center justify-between px-8 py-6 text-white; }
+  .auth-dots { @apply flex gap-1; }
+  .auth-dot { @apply grid h-11 w-8 place-items-center; }
+  .auth-dot span { @apply h-2 w-2 rounded-full bg-white/50; transition: width var(--duration-micro), background-color var(--duration-micro); }
+  .auth-dot[aria-pressed=true] span { @apply w-5 bg-white; }
+  .auth-play { @apply sr-only; }
+  .auth-play:focus-visible { @apply not-sr-only absolute bottom-6 right-8 inline-flex min-h-11 items-center gap-2 rounded-full border border-white/40 bg-black/40 px-4 text-sm font-bold text-white; }
+  .auth-form-panel { @apply flex min-w-0 flex-col justify-center py-4 lg:py-10; }
+  .auth-form-shell { @apply mx-auto w-full max-w-md; }
+  .auth-eyebrow { @apply mb-4 text-xs font-bold uppercase tracking-widest text-berry; }
+  .auth-form-shell h1 { @apply m-0 text-4xl font-bold leading-tight tracking-tight text-ink md:text-5xl; }
+  .auth-intro { @apply mb-8 mt-4 max-w-sm text-base leading-relaxed text-muted; }
+  .auth-page .account-form { @apply gap-4; }
+  .auth-page .account-actions { @apply mt-2; }
+  .auth-page .account-form .hint { @apply text-xs leading-relaxed; }
+  .auth-switch { @apply mb-0 mt-6 text-center text-sm text-muted; }
+  .auth-switch a { @apply ml-1 font-bold text-berry underline-offset-4 hover:underline; }
+  .auth-local-note { @apply mb-0 mt-6 border-t border-border pt-6 text-xs leading-relaxed text-muted; }
+  .account-password { @apply relative block; }
+  .account-password input { @apply pr-14; }
+  .account-password-toggle { @apply absolute bottom-0 right-1 inline-flex min-h-11 items-center rounded-lg px-3 text-xs font-bold text-berry; }
+  .account-demo-code { @apply rounded bg-pink-soft px-1.5 py-0.5 font-sans font-bold text-berry; }
+  @media (prefers-reduced-motion: reduce) {
+    .auth-slide, .auth-dot span { transition: none; }
+  }

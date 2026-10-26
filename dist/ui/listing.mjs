@@ -1,4 +1,5 @@
 import { parseRupiahInput, parseValidRentalPrice, rentalPriceError, formatRupiahInput, calculateCosts, validatePhotos } from '../core/rules.mjs';
+import { selectPhotos } from '../core/photos.mjs';
 
 const TEXT_FIELDS = ['name', 'category', 'brand', 'material', 'location', 'description', 'condition', 'size', 'terms'];
 const NUMBER_FIELDS = ['chest', 'waist', 'length'];
@@ -25,7 +26,7 @@ export function createListingFlow({ state, products, account, esc, money, stable
 
   function page() {
     draft();
-    return `<div class="container listing-page"><div class="page-top"><nav class="crumb" aria-label="Jejak halaman"><a href="#/merchant">Ruang merchant</a><span aria-hidden="true">/</span><span>Tambah outfit</span></nav><h1>Tambah outfit</h1><p class="hint">Siapkan outfit dan simpan draft. Akun pemilik terverifikasi diperlukan saat menerbitkan.</p></div>
+    return `<div class="page-shell listing-page"><div class="page-top"><nav class="crumb" aria-label="Jejak halaman"><a href="#/merchant">Ruang merchant</a><span aria-hidden="true">/</span><span>Tambah outfit</span></nav><h1>Tambah outfit</h1><p class="hint">Siapkan outfit dan simpan draft. Akun pemilik terverifikasi diperlukan saat menerbitkan.</p></div>
       <form id="uploadForm" class="checkout-grid" novalidate><div>
         <section class="panel"><h2>01 · Foto & informasi outfit</h2><div class="upload-area"><label>Foto outfit<input id="outfitPhotos" name="photos" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" multiple aria-required="true" aria-describedby="outfitPhotosHint outfitPhotosError"></label><p class="hint" id="outfitPhotosHint">JPEG, PNG, atau WebP. Maks. 4 foto, 5 MB per foto. Foto pertama menjadi sampul. Sertakan bagian depan, belakang, dan detail.</p>${errorMarkup('photos')}<p id="listingPhotoStatus" class="hint" role="status"></p><div id="photoPreview" class="upload-previews"></div></div>
           <div class="form-grid listing-information">${inputField('name', 'maxlength="65" placeholder="Contoh: Blue Hour Korean Set"', 'Nama outfit', 'span2')}${selectField('category')}${inputField('brand', 'placeholder="Nama brand / custom / tanpa brand"')}${inputField('material', 'placeholder="Contoh: katun, rajut"')}${selectField('location')}${textArea('description', 30, 'Jelaskan bahan, kondisi, dan semua item yang termasuk dalam sewa. Minimal 30 karakter.')}${inputField('condition', 'placeholder="Contoh: baik; sedikit aus pada ujung lengan"', 'Kondisi saat ini', 'span2')}</div>
@@ -98,7 +99,7 @@ export function createListingFlow({ state, products, account, esc, money, stable
       try { calculateCosts(values, 7, 'courier'); }
       catch (_) { errors.price = 'Nominal terlalu besar. Kurangi harga sewa atau deposit.'; }
     }
-    const photoError = photoPending ? 'Tunggu hingga foto selesai disiapkan.' : current.photoError || validatePhotos(current.files);
+    const photoError = photoPending ? 'Tunggu hingga foto selesai disiapkan.' : validatePhotos(current.files);
     if (photoError) errors.photos = photoError;
     if (!current.values.agree) errors.agree = 'Setujui pernyataan kepemilikan dan kondisi outfit sebelum menerbitkan.';
     for (const name of [...TEXT_FIELDS, ...NUMBER_FIELDS, ...MONEY_FIELDS, 'photos', 'agree']) setError(form, name, errors[name] || '');
@@ -142,8 +143,10 @@ export function createListingFlow({ state, products, account, esc, money, stable
 
   function renderPhotos(form) {
     const current = draft();
-    form.querySelector('#photoPreview').innerHTML = current.photos.map((url, index) => `<figure class="listing-photo"><img src="${esc(url)}" alt="${index === 0 ? 'Sampul' : `Foto ${index + 1}`} outfit: ${esc(current.files[index]?.name || '')}"><figcaption class="hint">${index === 0 ? 'Sampul · ' : ''}${esc(current.files[index]?.name || `Foto ${index + 1}`)}</figcaption><button type="button" class="btn ghost" data-listing-remove="${index}" aria-label="Hapus foto ${index + 1}: ${esc(current.files[index]?.name || '')}"${publishing || photoPending ? ' disabled' : ''}>Hapus foto</button></figure>`).join('');
-    form.querySelector('#listingPhotoStatus').textContent = photoPending ? 'Menyiapkan foto…' : current.files.length ? `${current.files.length} foto tersimpan dalam draft sesi ini.` : 'Belum ada foto dipilih.';
+    form.querySelector('#photoPreview').innerHTML = current.photos.map((url, index) => `<figure class="listing-photo"><img src="${esc(url)}" alt="${index === 0 ? 'Sampul' : `Foto ${index + 1}`} outfit: ${esc(current.files[index]?.name || '')}">${index === 0 ? '<span class="photo-cover">Sampul</span>' : ''}<figcaption class="hint">${index === 0 ? 'Sampul · ' : ''}${esc(current.files[index]?.name || `Foto ${index + 1}`)}</figcaption><button type="button" class="btn ghost" data-listing-remove="${index}" aria-label="Hapus foto ${index + 1}: ${esc(current.files[index]?.name || '')}"${publishing || photoPending ? ' disabled' : ''}>Hapus foto</button></figure>`).join('');
+    form.querySelector('#listingPhotoStatus').textContent = photoPending ? 'Menyiapkan foto…' : current.files.length ? `${current.files.length} / 4 foto · foto pertama menjadi sampul.` : 'Belum ada foto dipilih.';
+    form.elements.namedItem('photos').disabled = publishing || photoPending;
+    form.querySelectorAll('.file-picker-row button').forEach(button => { button.disabled = publishing || photoPending; });
     setError(form, 'photos', current.photoError || '');
     form.querySelectorAll('[data-listing-remove]').forEach(button => button.addEventListener('click', () => {
       if (publishing || photoPending) return;
@@ -158,42 +161,29 @@ export function createListingFlow({ state, products, account, esc, money, stable
   }
 
   async function choosePhotos(form) {
-    if (publishing) return;
+    if (publishing || photoPending) return;
     const current = captureDraft();
-    const files = Array.from(form.elements.namedItem('photos').files || []);
-    if (!files.length) { restoreFileInput(form); return; }
+    const incoming = Array.from(form.elements.namedItem('photos').files || []);
+    if (!incoming.length) { restoreFileInput(form); return; }
     const sequence = ++photoSequence;
-    const issue = validatePhotos(files);
-    if (issue) {
-      photoPending = false;
-      current.photoError = issue;
-      // Keep the accepted draft photos, but let choosing the same valid file
-      // fire a new change event after an invalid selection.
-      form.elements.namedItem('photos').value = '';
-      renderPhotos(form);
-      return;
-    }
+    const { accepted, rejected } = selectPhotos(current.files, incoming);
     photoPending = true;
     current.photoError = '';
     renderPhotos(form);
-    try {
-      const photos = await Promise.all(files.map(file => imageFileToSharedDataUrl(file)));
-      if (sequence !== photoSequence || state.listingDraft !== current) return;
-      current.files = files;
-      current.photos = photos;
-    } catch (_) {
-      if (sequence !== photoSequence || state.listingDraft !== current) return;
-      current.photoError = 'Foto tidak dapat dibaca. Pilih file JPEG, PNG, atau WebP yang dapat dibuka. Foto sebelumnya tetap tersimpan.';
-    } finally {
-      if (sequence === photoSequence) {
-        photoPending = false;
-        const visibleForm = activeForm();
-        if (visibleForm && state.listingDraft === current) {
-          if (current.photoError) visibleForm.elements.namedItem('photos').value = '';
-          else restoreFileInput(visibleForm);
-          renderPhotos(visibleForm);
-        }
-      }
+    const decoded = await Promise.allSettled(accepted.map(file => imageFileToSharedDataUrl(file)));
+    if (sequence !== photoSequence || state.listingDraft !== current) { photoPending = false; return; }
+    decoded.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        current.files.push(accepted[index]);
+        current.photos.push(result.value);
+      } else rejected.push(`${accepted[index].name}: gambar tidak dapat dibaca.`);
+    });
+    photoPending = false;
+    current.photoError = rejected.join(' ');
+    const visible = activeForm();
+    if (visible) {
+      restoreFileInput(visible);
+      renderPhotos(visible);
     }
   }
 
@@ -219,7 +209,7 @@ export function createListingFlow({ state, products, account, esc, money, stable
     };
     if (!account.user || account.user.role !== 'owner') {
       gatePending = true;
-      try { await account.ensureAccount(resume, { role: 'owner' }); }
+      try { await account.ensureVerified(resume, { role: 'owner' }); }
       finally { gatePending = false; }
       return;
     }

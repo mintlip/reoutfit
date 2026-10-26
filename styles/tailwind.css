@@ -1,0 +1,93 @@
+@import "tailwindcss" source(none);
+@import "../node_modules/preline/variants.css";
+@import "./legacy.css" layer(components);
+@import "../dist/ui/account.css" layer(components);
+@import "../dist/ui/home.css" layer(components);
+@import "../dist/ui/listing.css" layer(components);
+@import "../dist/ui/checkout.css" layer(components);
+@import "../dist/ui/reviews.css" layer(components);
+@import "../dist/ui/auth.css" layer(components);
+@import "./components.css" layer(components);
+
+/* Explicitly includes HTML and both JavaScript template extensions in dist. */
+@source "../dist/**/*.html";
+@source "../dist/**/*.js";
+@source "../dist/**/*.mjs";
+@source "../node_modules/preline/dist/*.js";
+@plugin "@tailwindcss/forms" { strategy: "class"; }
+
+@theme {
+  --font-sans: Aileron, Arial, sans-serif;
+  --color-berry: #a82f58;
+  --color-berry-dark: #862143;
+  --color-pink-soft: #f5e4eb;
+  --color-canvas: #faf8fa;
+  --color-paper: #ffffff;
+  --color-ink: #29252a;
+  --color-muted: #6d626c;
+  --color-border: #e4dce2;
+  --color-focus: #794ac1;
+  --color-success: #35664c;
+  --radius-panel: 1.5rem;
+  --shadow-soft: 0 8px 32px #46273508;
+  --shadow-glass: 0 4px 16px #a82f5808, inset 0 1px #fff9;
+  --text-display: clamp(2.5rem, 5vw, 4.5rem);
+  --text-display--line-height: 1.08;
+  --text-display--letter-spacing: -.045em;
+  --text-title: clamp(1.75rem, 3vw, 2.5rem);
+  --text-title--line-height: 1.2;
+  --text-title--letter-spacing: -.035em;
+  --spacing: .25rem;
+}
+
+@font-face { font-family: Aileron; src: url('assets/fonts/aileron/Aileron-Regular.woff') format('woff'); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: Aileron; src: url('assets/fonts/aileron/Aileron-SemiBold.woff') format('woff'); font-weight: 600; font-style: normal; font-display: swap; }
+@font-face { font-family: Aileron; src: url('assets/fonts/aileron/Aileron-Bold.woff') format('woff'); font-weight: 700; font-style: normal; font-display: swap; }
+
+@layer base {
+  :root {
+    /* Compatibility aliases keep existing domain components on the same theme. */
+    --pink: var(--color-berry); --pink-light: var(--color-pink-soft); --muted: var(--color-muted);
+    --border: var(--color-border); --paper: var(--color-paper); --green: var(--color-success);
+    --ink: var(--color-ink); --focus: var(--color-focus); --space-panel: 24px;
+    --duration-micro: 180ms; --duration-content: 380ms; --duration-photo: 900ms;
+    --ease-out: cubic-bezier(.2,.7,.3,1);
+  }
+  html { @apply scroll-smooth; scrollbar-gutter: stable; }
+  body { @apply m-0 bg-canvas font-sans text-base leading-relaxed text-ink antialiased; }
+  h1 { @apply text-display font-bold; }
+  h2 { @apply text-title font-bold; }
+  h3 { @apply text-xl leading-snug font-semibold tracking-tight; }
+  h4 { @apply text-lg font-semibold; }
+  p { @apply leading-relaxed; }
+  a { @apply no-underline; }
+  button, a, input, select, textarea { touch-action: manipulation; }
+  button { @apply cursor-pointer; }
+  button:disabled { @apply cursor-not-allowed opacity-50; }
+  :focus-visible { @apply outline-2 outline-offset-4 outline-focus; }
+  label { @apply block text-sm font-semibold; }
+  input:not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea {
+    @apply w-full min-w-0 rounded-xl border border-border bg-paper px-4 py-3 text-base font-normal text-ink shadow-xs;
+    min-height: 48px;
+    transition: border-color var(--duration-micro), box-shadow var(--duration-micro);
+  }
+  select { @apply form-select rounded-xl border-border bg-paper px-4 py-3 pr-10 text-ink; }
+  select:focus { --tw-ring-color: var(--color-berry); }
+  input:focus, select:focus, textarea:focus { @apply border-berry; }
+  input[aria-invalid='true'], select[aria-invalid='true'], textarea[aria-invalid='true'] { @apply border-red-700; }
+  label input, label select, label textarea { @apply mt-2; }
+  input[type='checkbox'], input[type='radio'] { @apply size-5 shrink-0 accent-berry; }
+  textarea { @apply min-h-28 resize-y; }
+  select { @apply pr-10; }
+  small { @apply text-sm; }
+  /* Explicit sizes protect line icons and native dialog against Preflight. */
+  svg { @apply inline-block size-5 shrink-0 align-middle; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  dialog { @apply m-auto max-h-[90dvh] overflow-y-auto rounded-panel border border-border bg-paper p-6 text-ink shadow-xl; width: min(540px, calc(100% - 32px)); }
+  dialog::backdrop { background: #29252a66; backdrop-filter: blur(4px); }
+  [hidden] { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

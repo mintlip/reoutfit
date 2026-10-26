@@ -1,3 +1,7 @@
+import { DEMO_PASSWORD, demoPasswordError, safeAuthReturnPath, authPageMarkup, bindAuthSlideshow } from './auth.mjs';
+import { icon } from './icons.mjs';
+import HSTogglePassword from '../vendor/toggle-password.mjs';
+
 const REGISTRY_KEY = 'reoutfit.demo.accounts.v1';
 const SESSION_KEY = 'reoutfit.demo.account.session.v1';
 const PRESETS = Object.freeze([
@@ -24,8 +28,8 @@ const emptyRegistry = () => Object.fromEntries(PRESETS.map(preset => [preset.id,
 }]));
 
 // Only preset identifiers and simulation metadata are persisted. No identity
-// documents, contact details, credentials, or user-supplied names are collected.
-export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}) {
+// documents, contact details, credentials, or user-supplied names are persisted.
+export function createAccountFlow({ toast = () => {}, onChange = () => {}, onNavigate = path => { location.hash = path; } } = {}) {
   let registry = emptyRegistry();
   let currentId = null;
   let intent = null;
@@ -34,6 +38,17 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
   let view = '';
   let returnFocus = null;
   let storageWarningShown = false;
+  let pageContinuation = null;
+  const passwordControls = new Map();
+
+  function releasePassword(scope) {
+    for (const [form, control] of passwordControls) {
+      if (!form.isConnected || scope?.contains(form)) {
+        control.destroy();
+        passwordControls.delete(form);
+      }
+    }
+  }
 
   function readRegistry() {
     try {
@@ -106,6 +121,7 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
 
   function releaseModal() {
     if (!active) return;
+    releasePassword(modal);
     active = false;
     view = '';
     modal.removeEventListener('cancel', onCancel);
@@ -129,6 +145,13 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
   function dismiss() {
     cancelIntent();
     closeModal();
+    finishPage();
+  }
+
+  function finishPage() {
+    const continuation = pageContinuation;
+    pageContinuation = null;
+    continuation?.();
   }
 
   function onCancel(event) {
@@ -140,6 +163,7 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
     cancelIntent();
     releaseModal();
     returnFocus = null;
+    finishPage();
   }
 
   function allowed(action = intent) {
@@ -156,7 +180,7 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
     const completed = intent;
     intent = null;
     closeModal();
-    if (!completed) return;
+    if (!completed) { finishPage(); return; }
     try {
       completed.callback?.(user());
       completed.resolve(true);
@@ -178,11 +202,12 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
       modal.addEventListener('cancel', onCancel);
       modal.addEventListener('close', onClosed);
     }
+    releasePassword(modal);
     view = nextView;
     modal.classList.add('account-dialog');
     modal.setAttribute('aria-labelledby', 'accountDialogTitle');
     modal.setAttribute('aria-describedby', 'accountDialogDescription');
-    modal.innerHTML = `<div class="dialog-head"><h2 id="accountDialogTitle" tabindex="-1">${escapeHTML(title)}</h2><button class="icon-btn" type="button" data-account-close aria-label="Tutup dialog akun"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M6 18 18 6"/></svg></button></div><p id="accountDialogDescription">${escapeHTML(description)}</p>${content}`;
+    modal.innerHTML = `<div class="dialog-head"><h2 id="accountDialogTitle" tabindex="-1">${escapeHTML(title)}</h2><button class="icon-btn" type="button" data-account-close aria-label="Tutup dialog akun">${icon('close')}</button></div><p id="accountDialogDescription">${escapeHTML(description)}</p>${content}`;
     modal.querySelector('[data-account-close]').onclick = dismiss;
     if (!modal.open) modal.showModal();
     modal.querySelector('#accountDialogTitle').focus({ preventScroll: true });
@@ -197,45 +222,56 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
     return `<span class="badge account-status" data-account-status="${account.verification}">${STATUS_LABELS[account.verification]}</span>`;
   }
 
-  function renderAuth(mode = 'login', preferredRole = intent?.role || user()?.role || 'renter') {
+  function authFormMarkup(mode, { requiredRole = '', selectedRole = 'renter', standalone = false } = {}) {
     const register = mode === 'register';
-    const requiredRole = intent?.role;
-    const selectedRole = requiredRole || preferredRole;
     const roles = requiredRole ? [requiredRole] : ['renter', 'owner'];
-    const account = user();
-    const switching = account && requiredRole && account.role !== requiredRole;
-    render(register ? 'Daftar akun demo' : switching ? 'Ganti akun demo' : 'Masuk akun demo',
-      'Ini akun demo lokal untuk mencoba Reoutfit. Gunakan alias bawaan, tanpa email atau kata sandi.',
-      `${switching ? `<p class="account-note">Anda sedang memakai ${escapeHTML(account.name)} (${roleLabel(account.role).toLowerCase()}). Aksi ini memerlukan akun ${roleLabel(requiredRole).toLowerCase()}.</p>` : ''}
-      <div class="account-auth-tabs" aria-label="Pilihan akun demo"><button class="btn ${register ? 'secondary' : ''}" type="button" data-account-mode="login" aria-pressed="${!register}">Masuk</button><button class="btn ${register ? '' : 'secondary'}" type="button" data-account-mode="register" aria-pressed="${register}">Daftar</button></div>
-      <form id="accountForm" class="account-form" novalidate>
-        <label for="accountRole">Peran demo<select id="accountRole" name="role">${roles.map(role => `<option value="${role}" ${role === selectedRole ? 'selected' : ''}>${roleLabel(role)}</option>`).join('')}</select></label>
-        <label for="accountAlias">Alias demo<select id="accountAlias" name="alias" aria-describedby="accountAliasHint accountAliasError" required></select></label>
-        <p class="hint" id="accountAliasHint">${register ? 'Aktifkan salah satu alias contoh pada perangkat ini.' : 'Semua alias adalah akun contoh yang dapat dicoba.'}</p>
-        <p class="field-error" id="accountAliasError" role="alert"></p>
-        <div class="account-actions"><button class="btn full" type="submit">${register ? 'Buat akun demo' : 'Masuk dengan alias ini'}</button><button class="btn ghost full" type="button" data-account-cancel>Batal</button></div>
-      </form><p class="hint account-storage-note">Sesi masuk berlaku untuk tab ini. Status simulasi alias tersimpan di browser ini.</p>`, 'auth');
-    if (!active) return;
-    const form = modal.querySelector('#accountForm');
+    return `<form id="accountForm" class="account-form" novalidate>
+      <label for="accountRole">Saya ingin<select id="accountRole" name="role" autocomplete="off">${roles.map(role => `<option value="${role}" ${role === selectedRole ? 'selected' : ''}>${role === 'owner' ? 'Menyewakan outfit' : 'Menyewa outfit'}</option>`).join('')}</select></label>
+      <label for="accountAlias">Akun contoh<select id="accountAlias" name="alias" autocomplete="username" aria-describedby="accountAliasHint accountAliasError" required></select></label>
+      <p class="hint" id="accountAliasHint">${register ? 'Aktifkan satu alias contoh pada perangkat ini.' : 'Pilih alias untuk mencoba pengalaman reoutfit.'}</p>
+      <p class="field-error" id="accountAliasError" role="alert"></p>
+      <label for="accountPassword">Kata sandi demo<span class="account-password"><input id="accountPassword" name="password" type="password" autocomplete="${register ? 'new-password' : 'current-password'}" required aria-describedby="accountPasswordHint accountPasswordError"><button class="account-password-toggle" type="button" data-account-password-toggle aria-controls="accountPassword" aria-pressed="false" aria-label="Tampilkan kata sandi">Tampilkan</button></span></label>
+      <p class="hint" id="accountPasswordHint">Gunakan <code class="account-demo-code">${DEMO_PASSWORD}</code>. Jangan masukkan kata sandi pribadi.</p>
+      <p class="field-error" id="accountPasswordError" role="alert"></p>
+      <div class="account-actions"><button class="btn full" type="submit">${register ? 'Buat akun' : 'Masuk'}</button>${standalone ? '' : '<button class="btn ghost full" type="button" data-account-cancel>Batal</button>'}</div>
+    </form>`;
+  }
+
+  function bindAuthForm(scope, mode, { requiredRole = '', onSuccess = () => {} } = {}) {
+    const register = mode === 'register';
+    const form = scope.querySelector('#accountForm');
+    if (!form) return;
     const roleField = form.querySelector('#accountRole');
     const aliasField = form.querySelector('#accountAlias');
+    const passwordField = form.querySelector('#accountPassword');
+    const passwordError = form.querySelector('#accountPasswordError');
     const error = form.querySelector('#accountAliasError');
     const submit = form.querySelector('[type="submit"]');
     const fillAliases = () => {
+      readRegistry();
       const aliases = PRESETS.filter(preset => preset.role === roleField.value);
       aliasField.innerHTML = aliases.map(preset => `<option value="${preset.id}" ${register && registry[preset.id].registered ? 'disabled' : ''}>${escapeHTML(preset.name)}${register && registry[preset.id].registered ? ' · sudah aktif' : ''}</option>`).join('');
       const first = aliases.find(preset => !register || !registry[preset.id].registered);
-      aliasField.value = first?.id || '';
+      aliasField.value = !register && aliases.some(preset => preset.id === currentId) ? currentId : first?.id || '';
       submit.disabled = !first;
       error.textContent = first ? '' : 'Semua alias peran ini sudah aktif. Pilih Masuk untuk memakainya.';
       aliasField.removeAttribute('aria-invalid');
     };
     fillAliases();
     roleField.onchange = fillAliases;
-    modal.querySelectorAll('[data-account-mode]').forEach(tab => {
-      tab.onclick = () => renderAuth(tab.dataset.accountMode, roleField.value);
+    const toggle = form.querySelector('[data-account-password-toggle]');
+    releasePassword(scope);
+    window.$hsTogglePasswordCollection ||= [];
+    const control = new HSTogglePassword(toggle, { target: scope === modal ? '#modal #accountPassword' : '.auth-page #accountPassword' });
+    passwordControls.set(form, control);
+    toggle.innerHTML = icon('eye');
+    control.on('toggle', () => {
+      const visible = passwordField.type === 'text';
+      toggle.innerHTML = icon(visible ? 'eye-off' : 'eye');
+      toggle.setAttribute('aria-pressed', String(visible));
+      toggle.setAttribute('aria-label', visible ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
     });
-    button('[data-account-cancel]', dismiss);
+    passwordField.oninput = () => { passwordError.textContent = ''; passwordField.removeAttribute('aria-invalid'); };
     let submitted = false;
     form.onsubmit = event => {
       event.preventDefault();
@@ -248,32 +284,83 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
         aliasField.focus();
         return;
       }
+      const passwordIssue = demoPasswordError(passwordField.value);
+      if (passwordIssue) {
+        passwordError.textContent = passwordIssue;
+        passwordField.setAttribute('aria-invalid', 'true');
+        passwordField.focus();
+        return;
+      }
       submitted = true;
       submit.disabled = true;
       form.setAttribute('aria-busy', 'true');
+      passwordField.value = '';
       saveAccount(selected.id, { registered: true });
       setCurrent(selected.id);
       toast(`${register ? 'Akun demo dibuat' : 'Masuk sebagai'} ${selected.name}.`);
-      if (register) renderOffer();
+      onSuccess();
+    };
+  }
+
+  function renderAuth(mode = 'login', preferredRole = intent?.role || user()?.role || 'renter') {
+    const register = mode === 'register';
+    const requiredRole = intent?.role;
+    const selectedRole = requiredRole || preferredRole;
+    const account = user();
+    const switching = account && requiredRole && account.role !== requiredRole;
+    render(register ? 'Buat akun reoutfit' : switching ? 'Ganti akun demo' : 'Masuk ke reoutfit',
+      'Pilih alias dan gunakan kata sandi contoh. Ini simulasi akun lokal.',
+      `${switching ? `<p class="account-note">Kamu sedang memakai ${escapeHTML(account.name)}. Aksi ini memerlukan akun ${roleLabel(requiredRole).toLowerCase()}.</p>` : ''}
+      <div class="account-auth-tabs" aria-label="Pilihan akun demo"><button class="btn ${register ? 'secondary' : ''}" type="button" data-account-mode="login" aria-pressed="${!register}">Masuk</button><button class="btn ${register ? '' : 'secondary'}" type="button" data-account-mode="register" aria-pressed="${register}">Daftar</button></div>
+      ${authFormMarkup(mode, { requiredRole, selectedRole })}<p class="hint account-storage-note">Sesi masuk berlaku untuk tab ini. Status simulasi alias tersimpan di browser ini.</p>`, 'auth');
+    if (!active) return;
+    bindAuthForm(modal, mode, { requiredRole, onSuccess: () => {
+      if (user()?.verification !== 'verified') renderOffer();
       else if (intent) continueIntent();
       else renderProfile();
-    };
+    } });
+    modal.querySelectorAll('[data-account-mode]').forEach(tab => {
+      tab.onclick = () => renderAuth(tab.dataset.accountMode, modal.querySelector('#accountRole').value);
+    });
+    button('[data-account-cancel]', dismiss);
+  }
+
+  function page(mode = 'login', { returnTo = '/', role = '' } = {}) {
+    readRegistry();
+    const requiredRole = ['renter', 'owner'].includes(normalizeRole(role)) ? normalizeRole(role) : '';
+    return authPageMarkup({ mode, returnTo, role: requiredRole, form: authFormMarkup(mode, { requiredRole, selectedRole: requiredRole || 'renter', standalone: true }) });
+  }
+
+  function bindPage(mode = 'login', { returnTo = '/', role = '' } = {}) {
+    const root = document.querySelector('.auth-page');
+    if (!root) return () => {};
+    const requiredRole = ['renter', 'owner'].includes(normalizeRole(role)) ? normalizeRole(role) : '';
+    const cleanup = bindAuthSlideshow(root);
+    bindAuthForm(root, mode, { requiredRole, onSuccess: () => {
+      cleanup();
+      pageContinuation = () => onNavigate(safeAuthReturnPath(returnTo));
+      if (user()?.verification !== 'verified') renderOffer();
+      else complete();
+    } });
+    return () => { cleanup(); releasePassword(root); };
   }
 
   function renderOffer() {
     const account = user();
     if (!account) return renderAuth('register');
-    render('Akun demo siap', 'Anda bisa memverifikasi alias sekarang atau melanjutkan menjelajah.',
-      `<div class="panel account-summary"><strong>${escapeHTML(account.name)}</strong><p class="small muted">${roleLabel(account.role)}</p>${statusMarkup(account)}</div><p class="small">Verifikasi juga simulasi dan memakai kartu contoh bawaan. Pilihan “Nanti saja” membatalkan aksi yang sedang menunggu verifikasi.</p><div class="account-actions"><button class="btn full" type="button" data-account-verify>Verifikasi sekarang</button><button class="btn secondary full" type="button" data-account-later>Nanti saja</button></div>`, 'offer');
+    if (account.verification === 'verified') return complete();
+    render('Yuk, lengkapi akunmu', 'Verifikasi sebelum memesan atau menerbitkan outfit. Kamu tetap bisa menjelajah sekarang.',
+      `<div class="panel account-summary"><strong>${escapeHTML(account.name)}</strong><p class="small muted">${roleLabel(account.role)}</p>${statusMarkup(account)}</div><p class="small">Cukup gunakan kartu dummy bawaan. Ini simulasi, bukan pemeriksaan identitas sungguhan.</p><div class="account-actions"><button class="btn full" type="button" data-account-verify>Verifikasi sekarang</button><button class="btn secondary full" type="button" data-account-later>Lewati untuk sekarang</button></div>`, 'offer');
     button('[data-account-verify]', renderVerification);
     button('[data-account-later]', () => {
-      dismiss();
-      toast('Akun demo siap. Verifikasi dapat dilakukan lewat menu Akun.');
+      if (intent?.verified) dismiss();
+      else complete();
+      toast('Kamu bisa verifikasi nanti lewat menu Akun.');
     });
   }
 
   function dummyCard(account) {
-    return `<div class="account-dummy-card" aria-label="Kartu simulasi bawaan, contoh tidak berlaku"><div class="account-dummy-top"><span class="eyebrow">Contoh KTP dummy</span><span class="badge account-status">SIMULASI</span></div><div class="account-dummy-body"><span class="account-dummy-avatar" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></span><div><strong>${escapeHTML(account.name)}</strong><p class="small muted">Alias bawaan · ${roleLabel(account.role)}</p><span class="small">Bukan dokumen identitas</span></div></div><strong class="account-dummy-watermark">CONTOH / TIDAK BERLAKU</strong></div>`;
+    return `<div class="account-dummy-card" aria-label="Kartu simulasi bawaan, contoh tidak berlaku"><div class="account-dummy-top"><span class="eyebrow">Contoh KTP dummy</span><span class="badge account-status">SIMULASI</span></div><div class="account-dummy-body"><span class="account-dummy-avatar" aria-hidden="true">${icon('user')}</span><div><strong>${escapeHTML(account.name)}</strong><p class="small muted">Alias bawaan · ${roleLabel(account.role)}</p><span class="small">Bukan dokumen identitas</span></div></div><strong class="account-dummy-watermark">CONTOH / TIDAK BERLAKU</strong></div>`;
   }
 
   function setVerification(verification) {
@@ -309,7 +396,7 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
       event.currentTarget.disabled = true;
       setVerification('verified');
       toast('Verifikasi simulasi disetujui.');
-      if (intent) complete();
+      if (intent || pageContinuation) complete();
       else renderVerification();
     });
     button('[data-account-reject]', event => {
@@ -351,6 +438,7 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
   }
 
   function openAccount() {
+    pageContinuation = null;
     cancelIntent();
     readRegistry();
     if (user()) renderProfile();
@@ -358,9 +446,11 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
   }
 
   function logout() {
+    pageContinuation = null;
     dismiss();
     setCurrent(null);
     toast('Keluar dari akun demo di tab ini.');
+    onNavigate('/login');
   }
 
   globalThis.addEventListener('storage', event => {
@@ -372,6 +462,8 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
     else if (active && view === 'profile') renderProfile();
   });
   globalThis.addEventListener('hashchange', () => {
+    // Explicit navigation must not resume the previous page's continuation.
+    pageContinuation = null;
     if (active) dismiss();
   });
 
@@ -380,6 +472,8 @@ export function createAccountFlow({ toast = () => {}, onChange = () => {} } = {}
     get isVerified() { return user()?.verification === 'verified'; },
     ensureAccount: (callback, options = {}) => ensure(callback, options, false),
     ensureVerified: (callback, options = {}) => ensure(callback, options, true),
+    page,
+    bindPage,
     openAccount,
     logout
   });

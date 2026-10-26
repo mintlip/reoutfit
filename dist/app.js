@@ -1,12 +1,17 @@
 import { products, baseProducts, state } from './core/state.mjs';
 import { stableId } from './core/id.mjs';
 import { createSharedStore } from './core/storage.mjs';
-import { money, calculateCosts, localDateFromISO, localDateISO, todayISO, addDaysISO, rentalPeriodIssue as checkRentalPeriod, ratingSummary } from './core/rules.mjs';
+import { money, parseRupiahInput, formatRupiahInput, calculateCosts, localDateFromISO, localDateISO, todayISO, addDaysISO, rentalPeriodIssue as checkRentalPeriod, ratingSummary } from './core/rules.mjs';
 import { createAccountFlow } from './ui/account.mjs';
 import { createCheckoutFlow } from './ui/checkout.mjs';
 import { createListingFlow } from './ui/listing.mjs';
 import { createReviewFlow } from './ui/reviews.mjs';
 import { homePage, bindFeatured } from './ui/home.mjs';
+import { icon } from './ui/icons.mjs';
+import { safeAuthReturnPath } from './ui/auth.mjs';
+import { createChatUI } from './ui/chat.mjs';
+import { enhanceFilePickers } from './ui/photo-picker.mjs';
+import { bindPageMotion } from './ui/motion.mjs';
 
 'use strict';
 const $ = s => document.querySelector(s),
@@ -18,20 +23,6 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({
   '"': '&quot;',
   "'": '&#39;'
 } [c]));
-const icons = {
-  search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4 4"/>',
-  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
-  shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6z"/><path d="m8 12 3 3 5-6"/>',
-  bag: '<path d="M5 7h14l1 14H4zM9 7V5a3 3 0 0 1 6 0v2"/>',
-  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/>',
-  pin: '<path d="M19 10c0 6-7 11-7 11S5 16 5 10a7 7 0 0 1 14 0Z"/><circle cx="12" cy="10" r="2"/>',
-  check: '<path d="m5 12 4 4L19 6"/>',
-  close: '<path d="m6 6 12 12M6 18 18 6"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  shirt: '<path d="m8 3-6 5 4 4 2-2v11h8V10l2 2 4-4-6-5c-1 3-7 3-8 0Z"/>',
-  wallet: '<rect x="3" y="5" width="18" height="15" rx="2"/><path d="M21 10h-7v5h7M5 5V3h13"/>'
-};
-const icon = n => `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[n]||icons.shirt}</svg>`;
 const activeRole = () => account.user?.role || null;
 function renderAfterSharedUpdate() {
   const route = (location.hash.slice(1) || '/').split('?')[0];
@@ -178,7 +169,7 @@ function ownerProfile(id, from) {
     profileCopy = 'Pemilik outfit',
     returnProduct = products.find(product => product.id === from && ownerId(product) === id) || owned[0],
     summaryText = summary.count ? `${summary.average.toFixed(1)} dari 5 · ${summary.count} ulasan` : 'Belum ada ulasan';
-  return `<div class="container"><div class="page-top"><nav class="crumb" aria-label="Breadcrumb"><a href="#/jelajah">Jelajah outfit</a><span>/</span><span>Profil pemilik</span></nav><a class="btn secondary" href="#/outfit/${encodeURIComponent(returnProduct.id)}">Kembali ke detail outfit</a></div><section class="panel owner-profile"><div class="owner-profile-heading"><span class="owner-profile-avatar" aria-hidden="true">${esc(ownerInitials(name))}</span><div><p class="eyebrow">Profil pemilik outfit</p><h1>${esc(name)}</h1><p class="muted">${esc(location)} · ${esc(profileCopy)}</p><span class="badge neutral">Identitas: ${owned.some(product => product.verification === 'verified') ? 'Terverifikasi (simulasi)' : 'Belum diverifikasi (simulasi)'}</span></div></div><div class="owner-profile-stats"><div><strong>${owned.length}</strong><span>Outfit aktif</span></div><div><strong>${summary.count ? `${summary.average.toFixed(1)} ★` : '—'}</strong><span>${esc(summaryText)}</span></div></div></section><section class="profile-section"><div class="section-heading"><div><p class="eyebrow">Koleksi pemilik</p><h2>Outfit lainnya</h2></div></div><div class="outfits">${owned.map(card).join('')}</div></section><section class="panel profile-section"><div class="section-heading"><div><p class="eyebrow">Pengalaman penyewa</p><h2>Ulasan outfit pemilik</h2></div></div>${summary.count ? `<div class="profile-reviews">${summary.reviews.map(({ review, order }) => `<article class="profile-review"><div class="review-topline"><strong>${'★'.repeat(review.rating)}${'☆'.repeat(5-review.rating)}</strong><span class="small muted">${esc(order.id)} · ${formatDate(order.start)} · ${order.days} hari</span></div><p>${review.text ? esc(review.text) : '<span class="muted">Tanpa komentar tertulis.</span>'}</p><small class="muted">Ulasan setelah pengembalian dan pemeriksaan selesai.</small></article>`).join('')}</div>` : '<p class="muted">Belum ada ulasan</p>'}</section><a class="btn secondary" href="#/outfit/${encodeURIComponent(returnProduct.id)}">Kembali ke detail outfit</a></div>`
+  return `<div class="page-shell"><div class="page-top"><nav class="crumb" aria-label="Breadcrumb"><a href="#/jelajah">Jelajah outfit</a><span>/</span><span>Profil pemilik</span></nav><a class="btn secondary" href="#/outfit/${encodeURIComponent(returnProduct.id)}">Kembali ke detail outfit</a></div><section class="panel owner-profile"><div class="owner-profile-heading"><span class="owner-profile-avatar" aria-hidden="true">${esc(ownerInitials(name))}</span><div><p class="eyebrow">Profil pemilik outfit</p><h1>${esc(name)}</h1><p class="muted">${esc(location)} · ${esc(profileCopy)}</p><span class="badge neutral">Identitas: ${owned.some(product => product.verification === 'verified') ? 'Terverifikasi (simulasi)' : 'Belum diverifikasi (simulasi)'}</span></div></div><div class="owner-profile-stats"><div><strong>${owned.length}</strong><span>Outfit aktif</span></div><div><strong>${summary.count ? `${summary.average.toFixed(1)} ${icon('star')}` : '—'}</strong><span>${esc(summaryText)}</span></div></div></section><section class="profile-section"><div class="section-heading"><div><p class="eyebrow">Koleksi pemilik</p><h2>Outfit lainnya</h2></div></div><div class="outfits">${owned.map(card).join('')}</div></section><section class="panel profile-section"><div class="section-heading"><div><p class="eyebrow">Pengalaman penyewa</p><h2>Ulasan outfit pemilik</h2></div></div>${summary.count ? `<div class="profile-reviews">${summary.reviews.map(({ review, order }) => `<article class="profile-review"><div class="review-topline"><strong>${Number(review.rating)} / 5 ${icon('star')}</strong><span class="small muted">${esc(order.id)} · ${formatDate(order.start)} · ${order.days} hari</span></div><p>${review.text ? esc(review.text) : '<span class="muted">Tanpa komentar tertulis.</span>'}</p><small class="muted">Ulasan setelah pengembalian dan pemeriksaan selesai.</small></article>`).join('')}</div>` : '<p class="muted">Belum ada ulasan</p>'}</section><a class="btn secondary" href="#/outfit/${encodeURIComponent(returnProduct.id)}">Kembali ke detail outfit</a></div>`
 }
 
 function chatTime(value) {
@@ -186,22 +177,7 @@ function chatTime(value) {
   return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('id-ID', { hour: '2-digit', minute: '2-digit' }).format(date)
 }
 
-function chatPage(productId, orderId, from, renterId) {
-  const product = products.find(item => item.id === productId),
-    order = orderId ? visibleOrders().find(item => item.id === orderId && item.product.id === productId) : null;
-  if (!product || (orderId && !order)) return notfound();
-  const key = order ? 'order:' + order.id : `product:${product.id}:${renterId || (activeRole() === 'renter' ? account.user.id : '')}`;
-  if (!canAccessChat(key)) return notfound();
-  const messages = state.chats[key] || (state.chats[key] = []),
-    returnTo = order && from === '/pesanan' ? '/pesanan' : '/outfit/' + product.id,
-    role = activeRole(),
-    peer = role === 'renter' ? product.owner : 'Penyewa';
-  return `<div class="container chat-page"><div class="page-top chat-page-top"><div><nav class="crumb" aria-label="Breadcrumb"><a href="#${returnTo}">Kembali</a><span>/</span><span>Chat</span></nav><p class="eyebrow">Percakapan</p><h1>Chat dengan ${esc(peer)}</h1></div><a class="btn secondary" href="#${returnTo}">Kembali</a></div><section class="panel chat-outfit"><img src="${esc(product.img)}" alt="${esc(product.name)}"><div class="chat-outfit-info"><span class="eyebrow">Outfit terkait</span><h2>${esc(product.name)}</h2><p class="muted">${esc(product.owner)} · ${esc(product.location)} · ${money(product.price)} / hari</p>${order ? `<p class="small">Pesanan ${esc(order.id)} · ${order.days} hari · ${formatDate(order.start)}</p>` : ''}</div><a class="help-link" href="#/outfit/${encodeURIComponent(product.id)}">Lihat outfit</a></section><section class="chat-demo-note"><p>Pesan dibagikan antar-tab pada browser ini.</p></section><section class="panel chat-panel" aria-label="Percakapan dengan ${esc(peer)}"><div class="chat-panel-heading"><div><span class="small muted">${order ? `Pesanan ${esc(order.id)}` : 'Pertanyaan tentang outfit'}</span><h2>${esc(peer)}</h2></div></div><div class="chat-messages" id="chatMessages" role="log" aria-live="polite" aria-relevant="additions text">${messages.length ? messages.map(message => {
-    const own = message.sender === role,
-      sender = own ? `Kamu · ${message.sender === 'renter' ? 'Penyewa' : 'Pemilik'}` : peer;
-    return `<article class="chat-message ${own ? 'own' : 'other'}"><span class="chat-sender">${esc(sender)}</span><p>${esc(message.text)}</p><time datetime="${esc(message.createdAt)}">${esc(chatTime(message.createdAt))}</time></article>`
-  }).join('') : '<div class="chat-empty"><strong>Belum ada pesan</strong><p>Mulai percakapan dengan menulis pesan di bawah.</p></div>'}</div><form class="chat-compose" id="chatForm" data-chat-key="${esc(key)}"><label for="chatInput">Pesan</label><textarea id="chatInput" name="message" rows="3" maxlength="1000" placeholder="Tulis pesan tentang outfit atau transaksi ini…" aria-describedby="chatMessageHint chatMessageError"></textarea><div class="chat-compose-meta"><span class="hint" id="chatMessageHint">Maksimal 1.000 karakter.</span><span class="small muted" id="chatMessageCount">0/1.000</span></div><p class="field-error" id="chatMessageError" role="alert" aria-live="polite"></p><button class="btn" type="submit">Kirim pesan</button></form></section></div>`
-}
+function chatPage(productId, orderId, from, renterId) { return chatUI.page(productId, orderId, renterId) }
 
 function dateISO() {
   let d = new Date();
@@ -255,7 +231,7 @@ function availabilityCalendarMarkup(productId, month) {
       end = value === selectedEnd,
       status = past ? 'Lewat' : available ? 'Tersedia' : 'Tidak tersedia',
       selectionLabel = start && end ? '; tanggal mulai dan kembali dipilih' : start ? '; tanggal mulai dipilih' : end ? '; tanggal kembali dipilih' : inRange ? '; termasuk periode sewa' : '',
-      marker = start && end ? 'M/K' : start ? 'M' : end ? 'K' : inRange ? '•' : past ? '—' : available ? '✓' : '×',
+      marker = start && end ? 'M/K' : start ? 'M' : end ? 'K' : inRange ? '•' : past ? '—' : available ? icon('check') : icon('close'),
       classes = ['availability-day', past ? 'is-past' : available ? 'is-available' : 'is-unavailable'];
     if (inRange) classes.push('is-in-range');
     if (start) classes.push('is-start');
@@ -264,7 +240,7 @@ function availabilityCalendarMarkup(productId, month) {
     const conflictLabel = conflict ? `; rentang ${state.days} hari melewati tanggal tidak tersedia` : '';
     days += `<button type="button" class="${classes.join(' ')}" data-calendar-date="${value}" aria-label="${esc(formatDate(value))}: ${status}${selectionLabel}${conflictLabel}" aria-pressed="${start || end}" ${past ? 'disabled' : available ? '' : 'aria-disabled="true"'} title="${status}${selectionLabel}${conflictLabel}"><span class="availability-number">${day}</span><span class="availability-mark" aria-hidden="true">${marker}</span></button>`
   }
-  return `<div class="availability-calendar-head"><button type="button" class="calendar-month-button" data-calendar-nav="-1" aria-label="Bulan sebelumnya">‹</button><h3 aria-live="polite">${monthLabel}</h3><button type="button" class="calendar-month-button" data-calendar-nav="1" aria-label="Bulan berikutnya">›</button></div><div class="availability-weekdays" aria-hidden="true">${weekdays.map(day => `<span>${day}</span>`).join('')}</div><div class="availability-days" aria-label="Tanggal pada ${monthLabel}">${days}</div><div class="availability-legend" aria-label="Keterangan kalender"><span><i class="legend-mark available">✓</i>Tersedia</span><span><i class="legend-mark unavailable">×</i>Tidak tersedia</span><span><i class="legend-mark past">—</i>Lewat</span><span><i class="legend-mark selected">M</i>Mulai sewa</span><span><i class="legend-mark return">K</i>Tanggal kembali</span><span><i class="legend-mark conflict">!</i>Durasi berbenturan</span></div>`
+  return `<div class="availability-calendar-head"><button type="button" class="calendar-month-button" data-calendar-nav="-1" aria-label="Bulan sebelumnya">${icon('chevron-left')}</button><h3 aria-live="polite">${monthLabel}</h3><button type="button" class="calendar-month-button" data-calendar-nav="1" aria-label="Bulan berikutnya">${icon('chevron-right')}</button></div><div class="availability-weekdays" aria-hidden="true">${weekdays.map(day => `<span>${day}</span>`).join('')}</div><div class="availability-days" aria-label="Tanggal pada ${monthLabel}">${days}</div><div class="availability-legend" aria-label="Keterangan kalender"><span><i class="legend-mark available">${icon('check')}</i>Tersedia</span><span><i class="legend-mark unavailable">${icon('close')}</i>Tidak tersedia</span><span><i class="legend-mark past">—</i>Lewat</span><span><i class="legend-mark selected">M</i>Mulai sewa</span><span><i class="legend-mark return">K</i>Tanggal kembali</span><span><i class="legend-mark conflict">!</i>Durasi berbenturan</span></div>`
 }
 
 function endDate(start, days) { return formatDate(addDaysISO(start, Number(days) - 1)) }
@@ -276,15 +252,15 @@ function formatDate(start) {
 function header(route) {
   const user = account.user;
   const links = [['/jelajah', 'Sewa'], ['/upload', 'Sewakan outfit'], ['/pesanan', 'Pesanan']];
-  if (user?.role === 'owner') links.push(['/merchant', 'Outfit saya']);
-  const chatLink = availableChatHref();
-  if (chatLink) links.push([chatLink.slice(1), 'Chat']);
-  $('#header').innerHTML = `<nav class="nav" aria-label="Navigasi utama"><a class="logo" href="#/" aria-label="reoutfit, beranda">reoutfit</a><div class="navlinks">${links.map(([path,label]) => `<a class="${route===path.split('?')[0]?'active':''}" ${route===path.split('?')[0]?'aria-current="page"':''} href="#${path}">${label}</a>`).join('')}</div><div class="navright">${user ? `<button class="btn secondary" type="button" data-account>${esc(user.name)}</button>` : '<button class="btn secondary" type="button" data-login>Masuk / Daftar</button>'}</div></nav>`;
-  bindAccountButtons($('#header'))
+  $('#header').innerHTML = `<nav class="site-nav" aria-label="Navigasi utama"><a class="brand" href="#/" aria-label="reoutfit, beranda"><img class="brand-mark" src="assets/brand/reoutfit-mark.png" alt="" width="213" height="213"><span class="brand-name">reoutfit</span></a><div class="nav-pill glass">${links.map(([path,label]) => {
+    const active = path === '/jelajah' ? route === '/' || route === '/jelajah' || route.startsWith('/outfit/') : path === '/upload' ? ['/upload','/merchant'].includes(route) : route === path;
+    return `<a class="${active ? 'active' : ''}" ${active ? 'aria-current="page"' : ''} href="#${path}">${path === '/pesanan' ? icon('cart') : ''}${label}</a>`;
+  }).join('')}</div><div class="nav-actions"><a href="#/chat" class="icon-btn" aria-label="Chat" ${route === '/chat' ? 'aria-current="page"' : ''}>${icon('chat')}</a>${user ? `<button class="nav-account" type="button" data-account aria-label="Akun ${esc(user.name)}">${icon('user')}<span>${esc(user.name)}</span></button>` : `<button class="nav-account" type="button" data-login aria-label="Masuk atau daftar">${icon('user')}<span>Masuk</span></button>`}</div></nav>`;
+  bindAccountButtons($('#header'));
 }
 
 function bindAccountButtons(holder) {
-  holder.querySelectorAll('[data-login]').forEach(button => button.onclick = () => account.ensureAccount(() => header((location.hash.slice(1) || '/').split('?')[0])));
+  holder.querySelectorAll('[data-login]').forEach(button => button.onclick = () => go('/login?next=' + encodeURIComponent(location.hash.slice(1) || '/')));
   holder.querySelectorAll('[data-account]').forEach(button => button.onclick = () => account.openAccount());
   holder.querySelectorAll('[data-require-account]').forEach(button => button.onclick = () => account.ensureAccount(() => render(), { role: button.dataset.requireAccount || undefined }));
 }
@@ -310,13 +286,6 @@ function canAccessChat(key) {
     : account.user.id === ownerId(product) && Array.isArray(state.chats[key]);
 }
 
-function availableChatHref() {
-  const order = visibleOrders().find(item => state.chats['order:' + item.id]);
-  if (order) return chatHref(order.product, order, '/pesanan');
-  const productKey = Object.keys(state.chats).find(key => key.startsWith('product:') && canAccessChat(key)),
-    product = productKey && products.find(item => item.id === productKey.split(':')[1]);
-  return product ? chatHref(product, null, '', productKey.split(':')[2]) : ''
-}
 
 function showModal(title, body, actions = '') {
   const m = $('#modal');
@@ -327,7 +296,7 @@ function showModal(title, body, actions = '') {
 
 function card(p) {
   const rating = ratingSummary(state.orders, p.id);
-  return `<article class="product"><a class="product-photo" href="#/outfit/${p.id}" aria-label="Lihat ${esc(p.name)}"><img src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy"><span class="badge">Ukuran ${esc(p.size)}</span></a><div class="product-body"><div class="eyebrow">${esc(p.category)}</div><h3><a href="#/outfit/${p.id}">${esc(p.name)}</a></h3><span class="meta">${icon('pin')} ${esc(p.location)}</span><div class="price num">${money(p.price)} <small>/ hari · min. 1 hari</small></div><span class="meta">Deposit ${money(p.deposit)}</span><span class="meta">${rating.count ? `${rating.average.toFixed(1)} ★ · ${rating.count} ulasan demo` : 'Belum ada ulasan'}</span><a class="btn secondary" href="#/outfit/${p.id}">Lihat detail</a></div></article>`
+  return `<article class="product group"><a class="product-photo" href="#/outfit/${encodeURIComponent(p.id)}" aria-label="Lihat ${esc(p.name)}"><img class="${p.id === 'dress' ? 'object-contain' : 'object-cover'}" src="${esc(p.img)}" alt="${esc(p.name)}" loading="lazy"><span class="absolute bottom-3 left-3 rounded-full bg-white/95 px-3 py-1 text-xs font-semibold">Ukuran ${esc(p.size)}</span></a><div class="product-body"><p class="text-xs font-semibold text-berry">${esc(p.category)}</p><h3 class="text-lg leading-snug"><a href="#/outfit/${encodeURIComponent(p.id)}" class="hover:text-berry">${esc(p.name)}</a></h3><span class="flex items-center gap-1 text-xs text-muted">${icon('pin')} ${esc(p.location)}</span><p class="mt-1 text-lg font-semibold tabular-nums text-berry">${money(p.price)} <span class="text-sm font-normal text-muted">/ hari</span></p><p class="text-xs text-muted">Deposit ${money(p.deposit)}</p>${rating.count ? `<p class="text-xs text-muted">${rating.average.toFixed(1)} dari 5 · ${rating.count} ulasan</p>` : ''}<a class="btn secondary mt-auto w-full" href="#/outfit/${encodeURIComponent(p.id)}">Lihat detail ${icon('arrow-up-right')}</a></div></article>`;
 }
 
 function home() { return homePage({ products, card, icon }) }
@@ -344,7 +313,7 @@ function options(list, value) {
 }
 
 function catalog() {
-  return `<div class="container"><div class="page-top"><h1>Jelajah outfit</h1><p>Filter kategori, ukuran, harga, dan lokasi.</p></div><div class="toolbar"><label class="search"><span class="sr-only" hidden>Cari outfit</span>${icon('search')}<input aria-label="Cari outfit" id="search" placeholder="Cari Korean set, dress, vest, cosplay…" value="${esc(state.search)}"></label><select id="sort" aria-label="Urutkan outfit"><option value="default">Urutan pilihan</option><option value="low" ${state.sort==='low'?'selected':''}>Harga terendah</option><option value="high" ${state.sort==='high'?'selected':''}>Harga tertinggi</option></select></div><div class="catalog-layout"><aside class="filters" aria-label="Filter outfit"><div class="filter-head"><strong>Filter outfit</strong><button id="reset">Reset</button></div><label>Kategori<select id="category">${options(['Semua','Korean style','Cosplay','Dress','Vest & formal'],state.category)}</select></label><label>Ukuran<select id="size">${options(['Semua','S','M','L','XL'],state.size)}</select></label><label>Harga maks. / hari<input id="max" type="number" min="0" step="1000" placeholder="Contoh: 100000" value="${esc(state.max)}"></label><label>Lokasi pemilik<select id="location">${options(['Semua','Bekasi','Jakarta Selatan'],state.location)}</select></label></aside><section><p id="result-count" class="result-count"></p><div class="outfits" id="catalog-products"></div></section></div></div>`
+  return `<div class="page-shell"><div class="page-top"><h1>Jelajah outfit</h1><p>Filter kategori, ukuran, harga, dan lokasi.</p></div><div class="toolbar"><label class="search"><span class="sr-only" hidden>Cari outfit</span>${icon('search')}<input aria-label="Cari outfit" id="search" placeholder="Cari Korean set, dress, vest, cosplay…" value="${esc(state.search)}"></label><select id="sort" aria-label="Urutkan outfit"><option value="default">Urutan pilihan</option><option value="low" ${state.sort==='low'?'selected':''}>Harga terendah</option><option value="high" ${state.sort==='high'?'selected':''}>Harga tertinggi</option></select></div><div class="catalog-layout"><aside class="filters" aria-label="Filter outfit"><div class="filter-head"><strong class="flex items-center gap-2">${icon('filter')} Filter outfit</strong><button id="reset">Reset</button></div><label>Kategori<select id="category">${options(['Semua','Korean style','Cosplay','Dress','Vest & formal'],state.category)}</select></label><label>Ukuran<select id="size">${options(['Semua','S','M','L','XL'],state.size)}</select></label><label>Harga maks. / hari<input id="max" type="text" inputmode="numeric" autocomplete="off" placeholder="Rp100.000" value="${state.max ? formatRupiahInput(Number(state.max)) : ''}"></label><label>Lokasi pemilik<select id="location">${options(['Semua','Bekasi','Jakarta Selatan'],state.location)}</select></label></aside><section><p id="result-count" class="result-count"></p><div class="outfits" id="catalog-products"></div></section></div></div>`
 }
 
 function renderResults() {
@@ -460,7 +429,7 @@ function bindOutfitGallery() {
 function detail(p) {
   state.selected = p.id;
   if (!state.start) state.start = dateISO();
-  return `<div class="container"><div class="page-top"><nav class="crumb" aria-label="Breadcrumb"><a href="#/">Beranda</a><span>/</span><a href="#/jelajah">Jelajah outfit</a><span>/</span><span>${esc(p.name)}</span></nav></div><div class="detail-grid"><div>${outfitGalleryMarkup(p)}<div class="panel" style="margin-top:24px"><h2>Detail outfit</h2><div class="summary-row"><span class="muted">Brand</span><strong>${esc(p.brand)}</strong></div><div class="summary-row"><span class="muted">Bahan</span><strong>${esc(p.material)}</strong></div><div class="summary-row"><span class="muted">Harga beli pemilik</span><strong class="num">${money(p.original)}</strong></div><p class="small muted">Harga beli bukan nominal denda.</p><details class="accordion" open><summary>Kondisi outfit</summary><p>${esc(p.condition)}</p></details><details class="accordion"><summary>Syarat dari pemilik outfit</summary><p>${esc(p.terms)}</p><p>Nilai penggantian maksimum yang diajukan: <strong>${money(p.replacement)}</strong>. Klaim harus didukung bukti dan ditinjau; bukan biaya otomatis.</p><a class="help-link" href="#/syarat">Pelajari deposit & penanganan masalah</a></details></div></div><div class="detail-info"><div class="eyebrow">${esc(p.category)}</div><h1>${esc(p.name)}</h1><div class="detail-price num">${money(p.price)} <small>/ hari · minimum 1 hari</small></div><p class="muted">${esc(p.description)}</p><div class="owner"><span class="avatar">${icon('user')}</span><div><strong>${esc(p.owner)}</strong><small>${esc(p.location)} · Pemilik outfit</small></div></div><div class="owner-profile-link"><span class="small muted">${ownerRatingSummary(ownerId(p)).count ? `${ownerRatingSummary(ownerId(p)).average.toFixed(1)} ★ · ${ownerRatingSummary(ownerId(p)).count} ulasan` : 'Belum ada ulasan'}</span><a class="help-link" href="#/pemilik/${encodeURIComponent(ownerId(p))}?from=${encodeURIComponent('/outfit/' + p.id)}">Lihat profil pemilik</a></div><div style="margin-top:24px"><h3>Ukuran</h3><div class="table-wrap"><table class="measurements"><thead><tr><th>Ukuran</th><th>Lingkar dada</th><th>Pinggang</th><th>Panjang</th></tr></thead><tbody><tr><td>${esc(p.size)}</td><td>${p.chest} cm</td><td>${p.waist} cm</td><td>${p.length} cm</td></tr></tbody></table></div><p class="small muted">Bandingkan ukuran dalam cm dengan pakaianmu.</p></div><form class="panel booking" id="booking" novalidate><h2>1 · Pilih tanggal</h2><div class="form-grid"><label>Tanggal mulai<input id="start" aria-describedby="availabilityFeedback" type="date" min="${dateISO()}" value="${state.start}" required></label><label>Durasi sewa<select id="days" aria-describedby="availabilityFeedback">${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${state.days===n?'selected':''}>${n} hari</option>`).join('')}</select></label></div><p class="hint" id="datehint"></p><div id="detail-costs">${costRows(p,state.days,'pickup')}</div><p class="note">Deposit <b>${money(p.deposit)}</b> dikembalikan setelah pemeriksaan kondisi dan penyelesaian klaim, jika ada.</p><button class="btn full" type="submit">Periksa ringkasan</button><p class="hint" style="text-align:center;margin-top:12px">Belum ada pembayaran pada langkah ini.</p></form></div></div>${reviewFlow.outfitSection(p.id)}</div>`
+  return `<div class="page-shell"><div class="page-top"><nav class="crumb" aria-label="Breadcrumb"><a href="#/">Beranda</a><span>/</span><a href="#/jelajah">Jelajah outfit</a><span>/</span><span>${esc(p.name)}</span></nav></div><div class="detail-grid"><div>${outfitGalleryMarkup(p)}<div class="panel" style="margin-top:24px"><h2>Detail outfit</h2><div class="summary-row"><span class="muted">Brand</span><strong>${esc(p.brand)}</strong></div><div class="summary-row"><span class="muted">Bahan</span><strong>${esc(p.material)}</strong></div><div class="summary-row"><span class="muted">Harga beli pemilik</span><strong class="num">${money(p.original)}</strong></div><p class="small muted">Harga beli bukan nominal denda.</p><details class="accordion" open><summary>Kondisi outfit</summary><p>${esc(p.condition)}</p></details><details class="accordion"><summary>Syarat dari pemilik outfit</summary><p>${esc(p.terms)}</p><p>Nilai penggantian maksimum yang diajukan: <strong>${money(p.replacement)}</strong>. Klaim harus didukung bukti dan ditinjau; bukan biaya otomatis.</p><a class="help-link" href="#/syarat">Pelajari deposit & penanganan masalah</a></details></div></div><div class="detail-info"><div class="eyebrow">${esc(p.category)}</div><h1>${esc(p.name)}</h1><div class="detail-price num">${money(p.price)} <small>/ hari · minimum 1 hari</small></div><p class="muted">${esc(p.description)}</p><div class="owner"><span class="avatar">${icon('user')}</span><div><strong>${esc(p.owner)}</strong><small>${esc(p.location)} · Pemilik outfit</small></div></div><div class="owner-profile-link"><span class="small muted">${ownerRatingSummary(ownerId(p)).count ? `${ownerRatingSummary(ownerId(p)).average.toFixed(1)} ${icon('star')} · ${ownerRatingSummary(ownerId(p)).count} ulasan` : 'Belum ada ulasan'}</span><a class="help-link" href="#/pemilik/${encodeURIComponent(ownerId(p))}?from=${encodeURIComponent('/outfit/' + p.id)}">Lihat profil pemilik</a></div><div style="margin-top:24px"><h3>Ukuran</h3><div class="table-wrap"><table class="measurements"><thead><tr><th>Ukuran</th><th>Lingkar dada</th><th>Pinggang</th><th>Panjang</th></tr></thead><tbody><tr><td>${esc(p.size)}</td><td>${p.chest} cm</td><td>${p.waist} cm</td><td>${p.length} cm</td></tr></tbody></table></div><p class="small muted">Bandingkan ukuran dalam cm dengan pakaianmu.</p></div><form class="panel booking" id="booking" novalidate><h2>1 · Pilih tanggal</h2><div class="form-grid"><label>Tanggal mulai<input id="start" aria-describedby="availabilityFeedback" type="date" min="${dateISO()}" value="${state.start}" required></label><label>Durasi sewa<select id="days" aria-describedby="availabilityFeedback">${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${state.days===n?'selected':''}>${n} hari</option>`).join('')}</select></label></div><p class="hint" id="datehint"></p><div id="detail-costs">${costRows(p,state.days,'pickup')}</div><p class="note">Deposit <b>${money(p.deposit)}</b> dikembalikan setelah pemeriksaan kondisi dan penyelesaian klaim, jika ada.</p><button class="btn full" type="submit">Periksa ringkasan</button><p class="hint" style="text-align:center;margin-top:12px">Belum ada pembayaran pada langkah ini.</p></form></div></div>${reviewFlow.outfitSection(p.id)}</div>`
 }
 
 function checkout() { return checkoutFlow.page() }
@@ -469,8 +438,8 @@ function orderPage() {
   const orders = visibleOrders();
   const isRenter = activeRole() === 'renter',
     title = isRenter ? 'Pesanan saya' : 'Pesanan masuk';
-  if (!orders.length) return `<div class="container"><div class="page-top"><h1>${title}</h1></div><div class="empty" style="margin-bottom:55px"><span class="icon-tile" style="margin:0 auto 18px">${icon('bag')}</span><h2>${isRenter ? 'Belum ada pesanan' : 'Belum ada pesanan masuk'}</h2><p>${isRenter ? 'Pesanan akan muncul setelah checkout.' : 'Pesanan dari penyewa akan tampil di sini.'}</p>${isRenter ? '<a class="btn" href="#/jelajah">Jelajahi outfit</a>' : '<a class="btn" href="#/merchant">Kembali ke dashboard</a>'}</div></div>`;
-  return `<div class="container"><div class="page-top"><h1>${title}</h1><p class="hint">Ulasan tersedia setelah outfit dikembalikan dan pemeriksaan selesai.</p></div>${orders.map(o=>orderCard(o)).join('')}</div>`
+  if (!orders.length) return `<div class="page-shell"><div class="page-top"><h1>${title}</h1></div><div class="empty" style="margin-bottom:55px"><span class="icon-tile" style="margin:0 auto 18px">${icon('bag')}</span><h2>${isRenter ? 'Belum ada pesanan' : 'Belum ada pesanan masuk'}</h2><p>${isRenter ? 'Pesanan akan muncul setelah checkout.' : 'Pesanan dari penyewa akan tampil di sini.'}</p>${isRenter ? '<a class="btn" href="#/jelajah">Jelajahi outfit</a>' : '<a class="btn" href="#/merchant">Kembali ke dashboard</a>'}</div></div>`;
+  return `<div class="page-shell"><div class="page-top"><h1>${title}</h1><p class="hint">Ulasan tersedia setelah outfit dikembalikan dan pemeriksaan selesai.</p></div>${orders.map(o=>orderCard(o)).join('')}</div>`
 }
 const statuses = ['Pesanan dibuat', 'Sedang disewa', 'Menunggu pemeriksaan', 'Selesai'];
 
@@ -669,7 +638,7 @@ function problem(o) {
 function merchant() {
   const ownedProducts = products.filter(p => ownerId(p) === account.user?.id);
   const orders = visibleOrders();
-  return `<div class="container"><div class="page-top page-actions"><div><h1>Outfit saya</h1><p>Kelola listing dan pesanan sewa.</p></div><a class="btn" href="#/upload">${icon('plus')} Tambah outfit</a></div><div class="tabs"><a class="${state.merchantTab==='outfit'?'active':''}" href="#/merchant" data-tab="outfit">Outfit saya</a><a class="${state.merchantTab==='orders'?'active':''}" href="#/merchant" data-tab="orders">Pesanan masuk</a><a class="${state.merchantTab==='revenue'?'active':''}" href="#/merchant" data-tab="revenue">Pendapatan & biaya</a></div><div class="stats"><div class="stat"><span class="muted">Listing milik akun ini</span><strong>${ownedProducts.length}</strong></div><div class="stat"><span class="muted">Pesanan</span><strong>${orders.length}</strong></div><div class="stat"><span class="muted">Pendapatan sewa selesai</span><strong>${money(orders.filter(o=>o.step===3).reduce((a,o)=>a+o.product.price*o.days,0))}</strong></div></div>${state.merchantTab==='outfit'?`<section class="panel"><h2>Listing outfit</h2><p class="small muted">Listing yang dikelola akun pemilik ini.</p>${ownedProducts.map(p=>`<article class="listing-row"><img src="${esc(p.img)}" alt="${esc(p.name)}"><div class="grow"><h3>${esc(p.name)}</h3><p class="small muted">${esc(p.category)} · ${money(p.price)} / hari</p></div><span class="badge green">${p.custom?'Terbit':'Contoh aktif'}</span><a class="btn secondary" href="#/outfit/${p.id}">Lihat listing</a></article>`).join('')}</section>`:state.merchantTab==='orders'?`<section class="panel"><h2>Pesanan masuk</h2>${orders.length?orders.map(o=>`<div class="listing-row"><img src="${esc(o.product.img)}" alt="${esc(o.product.name)}"><div class="grow"><h3>${esc(o.product.name)}</h3><p class="small muted">${o.id} · ${o.days} hari · ${statuses[o.step]}</p></div><a class="btn secondary" href="#/pesanan">Kelola pesanan</a></div>`).join(''):'<p class="muted">Belum ada pesanan. Coba buat pesanan melalui akun penyewa.</p>'}</section>`:`<section class="panel"><h2>Pembagian biaya</h2><p>Pemilik menerima harga sewa penuh. Penyewa membayar biaya platform 10% secara terpisah.</p><div class="table-wrap"><table class="data-table"><thead><tr><th>Contoh: Rp55.000 × 3 hari</th><th>Nominal</th><th>Tujuan dana</th></tr></thead><tbody><tr><td>Harga sewa</td><td>Rp165.000</td><td>Pendapatan pemilik</td></tr><tr><td>Biaya platform 10%</td><td>Rp16.500</td><td>Pendapatan kotor reoutfit</td></tr><tr><td>Deposit</td><td>Rp100.000</td><td>Ditahan sementara, bukan revenue</td></tr></tbody></table></div><p class="note">10% adalah asumsi model bisnis awal, bukan tarif final. Biaya payment gateway, operasional, dan penanganan sengketa masih perlu divalidasi.</p><p class="small muted">Tidak ada saldo atau pencairan dana sungguhan dalam prototipe.</p></section>`}</div>`
+  return `<div class="page-shell"><div class="page-top page-actions"><div><h1>Outfit saya</h1><p>Kelola listing dan pesanan sewa.</p></div><a class="btn" href="#/upload">${icon('plus')} Tambah outfit</a></div><div class="tabs"><a class="${state.merchantTab==='outfit'?'active':''}" href="#/merchant" data-tab="outfit">Outfit saya</a><a class="${state.merchantTab==='orders'?'active':''}" href="#/merchant" data-tab="orders">Pesanan masuk</a><a class="${state.merchantTab==='revenue'?'active':''}" href="#/merchant" data-tab="revenue">Pendapatan & biaya</a></div><div class="stats"><div class="stat"><span class="muted">Listing milik akun ini</span><strong>${ownedProducts.length}</strong></div><div class="stat"><span class="muted">Pesanan</span><strong>${orders.length}</strong></div><div class="stat"><span class="muted">Pendapatan sewa selesai</span><strong>${money(orders.filter(o=>o.step===3).reduce((a,o)=>a+o.product.price*o.days,0))}</strong></div></div>${state.merchantTab==='outfit'?`<section class="panel"><h2>Listing outfit</h2><p class="small muted">Listing yang dikelola akun pemilik ini.</p>${ownedProducts.map(p=>`<article class="listing-row"><img src="${esc(p.img)}" alt="${esc(p.name)}"><div class="grow"><h3>${esc(p.name)}</h3><p class="small muted">${esc(p.category)} · ${money(p.price)} / hari</p></div><span class="badge green">${p.custom?'Terbit':'Contoh aktif'}</span><a class="btn secondary" href="#/outfit/${p.id}">Lihat listing</a></article>`).join('')}</section>`:state.merchantTab==='orders'?`<section class="panel"><h2>Pesanan masuk</h2>${orders.length?orders.map(o=>`<div class="listing-row"><img src="${esc(o.product.img)}" alt="${esc(o.product.name)}"><div class="grow"><h3>${esc(o.product.name)}</h3><p class="small muted">${o.id} · ${o.days} hari · ${statuses[o.step]}</p></div><a class="btn secondary" href="#/pesanan">Kelola pesanan</a></div>`).join(''):'<p class="muted">Belum ada pesanan. Coba buat pesanan melalui akun penyewa.</p>'}</section>`:`<section class="panel"><h2>Pembagian biaya</h2><p>Pemilik menerima harga sewa penuh. Penyewa membayar biaya platform 10% secara terpisah.</p><div class="table-wrap"><table class="data-table"><thead><tr><th>Contoh: Rp55.000 × 3 hari</th><th>Nominal</th><th>Tujuan dana</th></tr></thead><tbody><tr><td>Harga sewa</td><td>Rp165.000</td><td>Pendapatan pemilik</td></tr><tr><td>Biaya platform 10%</td><td>Rp16.500</td><td>Pendapatan kotor reoutfit</td></tr><tr><td>Deposit</td><td>Rp100.000</td><td>Ditahan sementara, bukan revenue</td></tr></tbody></table></div><p class="note">10% adalah asumsi model bisnis awal, bukan tarif final. Biaya payment gateway, operasional, dan penanganan sengketa masih perlu divalidasi.</p><p class="small muted">Tidak ada saldo atau pencairan dana sungguhan dalam prototipe.</p></section>`}</div>`
 }
 
 function upload() { return listingFlow.page() }
@@ -689,6 +658,8 @@ function filePreview(input, holder, strictConditionFormats = false) {
     previewUrls = []
   };
   const dialog = input.closest('dialog');
+  const releasePicker = enhanceFilePickers(input.closest('.upload-area') || input.parentElement);
+  dialog?.addEventListener('close', releasePicker, { once: true });
   if (dialog) dialog.addEventListener('close', clearPreviews, { once: true });
   input.onchange = () => {
     const files = [...input.files];
@@ -751,7 +722,7 @@ function bind(route) {
         if (returnLink && activeRole() !== 'renter') returnLink.remove();
         if (inspect && activeRole() !== 'owner') inspect.remove()
       }
-      if (order && actions) actions.insertAdjacentHTML('beforeend', `<a class="btn secondary" href="${chatHref(order.product, order, '/pesanan')}">Chat terkait pesanan</a>`);
+      if (order && actions) actions.insertAdjacentHTML('beforeend', `<a class="btn secondary" href="${chatHref(order.product, order, '/pesanan')}">${activeRole() === 'owner' ? 'Chat penyewa' : 'Chat penjual'}</a>`);
       if (order && panel && order.step === 3) panel.insertAdjacentHTML('beforeend', `<section class="order-reviews"><h3>Ulasan transaksi</h3><div class="row-actions">${reviewFlow.action(order, activeRole())}</div></section>`)
     });
     bindConditionEvidenceUploads()
@@ -767,7 +738,7 @@ function bind(route) {
   if (route.startsWith('/outfit/')) {
     bindOutfitGallery();
     const ownerLinks = $('#main .owner-profile-link');
-    if (activeRole() === 'renter' && ownerLinks) ownerLinks.insertAdjacentHTML('beforeend', `<a class="btn secondary" href="${chatHref(current())}">Hubungi Pemilik</a>`);
+    if (activeRole() !== 'owner' && ownerLinks) ownerLinks.insertAdjacentHTML('beforeend', `<a class="btn secondary" href="${chatHref(current())}">Chat penjual</a>`);
     if (activeRole() === 'owner' && ownerLinks) {
       const keys = Object.keys(state.chats).filter(key => key.startsWith(`product:${current().id}:`) && canAccessChat(key));
       keys.forEach((key, index) => ownerLinks.insertAdjacentHTML('beforeend', `<a class="btn secondary" href="${chatHref(current(), null, '', key.split(':')[2])}">Chat penyewa ${index + 1}</a>`));
@@ -779,39 +750,16 @@ function bind(route) {
       input = $('#chatInput'),
       count = $('#chatMessageCount'),
       error = $('#chatMessageError');
-    const outfitCard = $('.chat-outfit'),
-      originalImage = outfitCard && outfitCard.querySelector(':scope > img');
-    if (originalImage) {
-      const imageColumn = document.createElement('div'),
-        preview = document.createElement('div'),
-        toggle = document.createElement('button');
-      imageColumn.className = 'chat-image-column';
-      preview.className = 'chat-outfit-image';
-      preview.id = 'chatOutfitImage';
-      toggle.className = 'chat-image-toggle';
-      toggle.type = 'button';
-      toggle.setAttribute('aria-expanded', 'false');
-      toggle.setAttribute('aria-controls', preview.id);
-      toggle.innerHTML = '<svg class="chevron-down" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg><svg class="chevron-up" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="m6 15 6-6 6 6"/></svg><span>Lihat gambar asli</span>';
-      outfitCard.insertBefore(imageColumn, originalImage);
-      preview.appendChild(originalImage);
-      imageColumn.append(preview, toggle);
-      toggle.onclick = () => {
-        const expanded = toggle.getAttribute('aria-expanded') !== 'true';
-        toggle.setAttribute('aria-expanded', String(expanded));
-        preview.classList.toggle('is-expanded', expanded);
-        outfitCard.classList.toggle('is-expanded', expanded);
-        toggle.querySelector('.chevron-down').hidden = expanded;
-        toggle.querySelector('.chevron-up').hidden = !expanded;
-        toggle.querySelector('span').textContent = expanded ? 'Sembunyikan gambar' : 'Lihat gambar asli'
-      }
-    }
+    input.onkeydown = event => {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); form.requestSubmit(); }
+    };
     input.oninput = () => {
       count.textContent = `${input.value.length.toLocaleString('id-ID')}/1.000`;
       error.textContent = ''
     };
     form.onsubmit = event => {
       event.preventDefault();
+      if (!form.isConnected || form.dataset.sending === 'true') return;
       const text = input.value.trim();
       if (!text) {
         error.textContent = 'Tulis pesan terlebih dahulu.';
@@ -830,10 +778,12 @@ function bind(route) {
         return;
       }
       if (!Array.isArray(state.chats[key])) state.chats[key] = [];
+      form.dataset.sending = 'true';
       const message = { id: stableId('msg'), sender: activeRole(), text, createdAt: new Date().toISOString() };
       state.chats[key].push(message);
       if (!persistSharedDemo()) {
         state.chats[key] = state.chats[key].filter(item => item.id !== message.id);
+        form.dataset.sending = 'false';
         error.textContent = 'Pesan belum tersimpan. Periksa ruang penyimpanan browser, lalu coba lagi.';
         return;
       }
@@ -846,16 +796,17 @@ function bind(route) {
     messages.scrollTop = messages.scrollHeight
   }
   if (route === '/') $$('[data-home-cat]').forEach(b => b.onclick = () => {
-    $$('[data-home-cat]').forEach(x => x.classList.toggle('active', x === b));
+    $$('[data-home-cat]').forEach(x => { x.classList.toggle('active', x === b); x.setAttribute('aria-pressed', String(x === b)); });
     $('#home-products').innerHTML = products.filter(p => b.dataset.homeCat === 'Semua' || p.category === b.dataset.homeCat).map(card).join('');
     enhancePresentation()
   });
   if (route === '/jelajah') {
     renderResults();
     ['category', 'size', 'location', 'max', 'sort', 'search'].forEach(k => $('#' + k).addEventListener(k === 'search' || k === 'max' ? 'input' : 'change', e => {
-      state[k] = e.target.value;
+      state[k] = k === 'max' ? parseRupiahInput(e.target.value) ?? '' : e.target.value;
       renderResults()
     }));
+    $('#max').addEventListener('blur', event => { if (state.max !== '') event.target.value = formatRupiahInput(Number(state.max)); });
     $('#reset').onclick = resetFilters
   }
   if ($('#booking')) {
@@ -1167,12 +1118,7 @@ function bind(route) {
   });
   if ($('#uploadForm')) listingFlow.bind();
 }
-let revealObserver;
-
 function enhancePresentation() {
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (revealObserver) revealObserver.disconnect();
-  $$('#main .reveal-pending').forEach(el => el.classList.remove('reveal-pending'));
   $$('#main img').forEach(img => {
     img.decoding = 'async';
     const src = img.getAttribute('src');
@@ -1189,58 +1135,49 @@ function enhancePresentation() {
       img.srcset = src.replace('.webp', '-480.webp') + ' 480w, ' + src + ' ' + width + 'w';
       img.sizes = img.classList.contains('detail-photo') ? '(max-width: 760px) calc(100vw - 40px), 560px' : img.closest('.hero-image') ? '(max-width: 760px) calc(100vw - 40px), 560px' : img.closest('.order-mini,.listing-row') ? '112px' : '(max-width: 390px) calc(100vw - 40px), (max-width: 760px) 44vw, (max-width: 1050px) 42vw, 380px';
     }
-    if (img.closest('.hero-image') || img.classList.contains('detail-photo')) {
+    if (img.closest('.auth-slideshow,.auth-visual,.featured-item.is-active') || img.loading === 'eager' || img.classList.contains('detail-photo')) {
       img.loading = 'eager';
       img.fetchPriority = 'high'
     } else img.loading = 'lazy';
   });
-  if (reduced) return;
-  if ('IntersectionObserver' in window) {
-    revealObserver = new IntersectionObserver(entries => entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.remove('reveal-pending');
-        entry.target.classList.add('reveal-ready');
-        revealObserver.unobserve(entry.target)
-      }
-    }), {
-      threshold: 0.06,
-      rootMargin: '0px 0px 24px 0px'
-    });
-    $$('#main .section,#main .merchant-banner,#main .checkout-grid>.panel,#main .policy-grid').forEach(section => {
-      if (section.getBoundingClientRect().top > window.innerHeight) {
-        section.classList.add('reveal-pending');
-        revealObserver.observe(section)
-      }
-    });
-  }
 }
 
 function animatePage() {
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !$('#main').animate) return;
-  $('#main').animate([{
-    opacity: .65,
-    transform: 'translateY(6px)'
-  }, {
-    opacity: 1,
-    transform: 'translateY(0)'
-  }], {
-    duration: 240,
-    easing: 'cubic-bezier(.2,.7,.3,1)'
-  });
+  cleanupMotion();
+  cleanupMotion = bindPageMotion($('#main'));
 }
 // Hash URL menentukan halaman yang ditampilkan.
+let cleanupAuth = () => {};
+let cleanupPickers = () => {};
+let cleanupMotion = () => {};
 function render() {
+  cleanupMotion();
+  cleanupMotion = () => {};
+  cleanupAuth();
+  cleanupAuth = () => {};
+  cleanupPickers();
   cleanupFeatured();
   cleanupFeatured = () => {};
   listingFlow.captureDraft();
   checkoutFlow.captureDraft();
-  const routeHash = location.hash.slice(1) || '/',
-    [requestedRoute, queryString = ''] = routeHash.split('?');
+  let routeHash = location.hash.slice(1) || '/';
+  const initialPath = routeHash.split('?')[0];
+  if (!account.user && (initialPath === '/' || initialPath === '/chat')) {
+    routeHash = '/login?next=' + encodeURIComponent(routeHash);
+    history.replaceState(null, '', '#' + routeHash);
+  }
+  if (account.user && ['/login', '/register'].includes(routeHash.split('?')[0])) {
+    const next = new URLSearchParams(routeHash.split('?')[1]).get('next') || '/';
+    routeHash = safeAuthReturnPath(next);
+    history.replaceState(null, '', '#' + routeHash);
+  }
+  const [requestedRoute, queryString = ''] = routeHash.split('?');
   const route = requestedRoute === '/mode' ? '/akun' : requestedRoute;
   header(route);
   let html, bindRoute = route;
   const needsAccount = ['/pesanan', '/merchant', '/chat'].includes(route) || route.startsWith('/pengembalian/') || route.startsWith('/masalah/');
-  if (route === '/akun') html = `<div class="narrow"><section class="panel account-gate"><h1>Akun</h1><p>${account.user ? esc(account.user.name) : 'Masuk saat ingin membuat pesanan atau menerbitkan listing.'}</p><button class="btn" type="button" data-account>Kelola akun demo</button></section></div>`;
+  if (route === '/login' || route === '/register') html = account.page(route.slice(1), { returnTo: new URLSearchParams(queryString).get('next') || '/', role: new URLSearchParams(queryString).get('role') || '' });
+  else if (route === '/akun') html = `<div class="narrow"><section class="panel account-gate"><h1>Akun</h1><p>${account.user ? esc(account.user.name) : 'Masuk saat ingin membuat pesanan atau menerbitkan listing.'}</p><button class="btn" type="button" data-account>Kelola akun demo</button></section></div>`;
   else if (needsAccount && (!account.user || (route === '/merchant' && activeRole() !== 'owner'))) { html = accessPage(route === '/merchant' ? 'owner' : ''); bindRoute = '/restricted' }
   else if (route === '/') html = home();
   else if (route === '/jelajah') html = catalog();
@@ -1269,6 +1206,8 @@ function render() {
   releaseTransientObjectUrls();
   $('#main').innerHTML = html;
   bind(bindRoute);
+  if (['/login','/register'].includes(route)) cleanupAuth = account.bindPage(route.slice(1), { returnTo: new URLSearchParams(queryString).get('next') || '/', role: new URLSearchParams(queryString).get('role') || '' }) || (() => {});
+  cleanupPickers = enhanceFilePickers($('#main'));
   enhancePresentation();
   document.title = (route === '/' ? 'Sewa outfit' : route.startsWith('/outfit/') ? current().name : route.startsWith('/pemilik/') ? 'Profil pemilik' : route === '/chat' ? 'Chat' : route.slice(1).split('/')[0].replace(/^./, x => x.toUpperCase())) + ' — reoutfit'
 }
@@ -1295,7 +1234,7 @@ const refreshSharedDemo = () => store.refresh();
 const persistSharedDemo = () => store.persist();
 const resetSharedDemo = () => store.reset();
 const touchOrder = order => store.touchOrder(order);
-const account = createAccountFlow({ toast, onChange: () => {
+const account = createAccountFlow({ toast, onNavigate: go, onChange: () => {
   header((location.hash.slice(1) || '/').split('?')[0]);
   checkoutFlow.refreshAccountStatus();
   listingFlow.refreshAccountStatus();
@@ -1305,6 +1244,7 @@ const account = createAccountFlow({ toast, onChange: () => {
 } });
 const checkoutFlow = createCheckoutFlow({ state, current, account, esc, money, formatDate, endDate, costRows, ownerId, stableId, refreshSharedDemo, persistSharedDemo, toast, go });
 const listingFlow = createListingFlow({ state, products, account, esc, icon, money, stableId, refreshSharedDemo, persistSharedDemo, imageFileToSharedDataUrl, toast, go });
+const chatUI = createChatUI({ state, products, account, canAccessChat, visibleOrders, ownerId, esc, money, chatTime, chatHref });
 const reviewFlow = createReviewFlow({ state, account, esc, formatDate, touchOrder, refreshSharedDemo, persistSharedDemo, toast, render });
 // Closed dialogs must not leave duplicate form IDs behind on the next page.
 $('#modal').addEventListener('close', () => {
@@ -1312,3 +1252,4 @@ $('#modal').addEventListener('close', () => {
 });
 store.start();
 render();
+animatePage();

@@ -63,10 +63,10 @@ export function createCheckoutFlow({ state, current, account, esc, money, format
   function page() {
     choices();
     const product = current();
-    if (!product) return '<div class="container checkout-flow"><div class="page-top"><h1>Ringkasan sewa</h1></div><section class="panel"><h2>Outfit belum dipilih</h2><a class="btn" href="#/jelajah">Jelajah outfit</a></section></div>';
+    if (!product) return '<div class="page-shell checkout-flow"><div class="page-top"><h1>Ringkasan sewa</h1></div><section class="panel"><h2>Outfit belum dipilih</h2><a class="btn" href="#/jelajah">Jelajah outfit</a></section></div>';
     const draft = state.checkoutDraft || {};
     const detailHref = `#/outfit/${encodeURIComponent(product.id)}`;
-    return `<div class="container checkout-flow">
+    return `<div class="page-shell checkout-flow">
       <div class="page-top"><nav class="crumb" aria-label="Breadcrumb"><a href="${detailHref}">Detail outfit</a><span aria-hidden="true">/</span><span aria-current="page">Ringkasan sewa</span></nav><h1>Ringkasan sewa</h1><p class="muted">Periksa jadwal, biaya, dan syarat sebelum mengonfirmasi pesanan.</p></div>
       <ol class="progress-steps checkout-progress" aria-label="Tahap pemesanan"><li><span><b aria-hidden="true">1</b> Pilih outfit & tanggal</span></li><li class="current" data-checkout-stage="2" aria-current="step"><span><b aria-hidden="true">2</b> Periksa ringkasan</span></li><li data-checkout-stage="3"><span><b aria-hidden="true">3</b> Konfirmasi pesanan</span></li></ol>
       <form id="checkoutForm" class="checkout-grid" novalidate>

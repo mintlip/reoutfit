@@ -19,11 +19,11 @@ Reoutfit tetap memakai HTML, CSS, dan Vanilla JavaScript. Pemisahan modul memban
 
 Alur umumnya: event pengguna mengubah state, aturan memeriksa input, penyimpanan mencatat data yang boleh disimpan, lalu UI diperbarui. URL seperti `#/jelajah`, `#/outfit/korean`, dan `#/pesanan` dipilih oleh `render()`. Halaman memasang event melalui `bind()` atau fungsi `bind()` modul terkait.
 
-Saat menambah fitur, letakkan perhitungan di `core/rules.mjs`, data sementara di state, penyimpanan bersama di `core/storage.mjs`, dan tampilan/interaksi di modul UI yang sesuai. `app.js` masih mengandung beberapa halaman lama; pemisahan ini bertahap, bukan penulisan ulang seluruh aplikasi. CSS bersama ada di `dist/styles.css`; aturan fitur ada di `dist/ui/*.css`.
+Saat menambah fitur, letakkan perhitungan di `core/rules.mjs`, data sementara di state, penyimpanan bersama di `core/storage.mjs`, dan tampilan/interaksi di modul UI yang sesuai. `app.js` masih mengandung beberapa halaman lama; pemisahan ini bertahap. Sumber Tailwind ada di `styles/tailwind.css` dan `styles/components.css`; aturan fitur ada di `dist/ui/*.css`. `dist/styles.css` adalah hasil build, jangan diedit langsung. Modul `auth.mjs`, `chat.mjs`, `photo-picker.mjs`, dan `motion.mjs` menangani komponen baru; GSAP dan Preline disajikan lokal dari `dist/vendor`.
 
 ## Akun dan verifikasi
 
-Alias tersedia untuk dua penyewa serta pemilik Lemari Nara, Atelier Luna, dan Lemari Kamu. Masuk/daftar hanya memilih dan mengaktifkan alias contoh. Tidak ada kredensial, autentikasi server, email, kata sandi, atau nama pribadi yang dikumpulkan oleh modul akun.
+Alias tersedia untuk dua penyewa serta pemilik Lemari Nara, Atelier Luna, dan Lemari Kamu. Halaman Masuk/Daftar mengaktifkan alias dengan kata sandi demo publik `reoutfit123`. Kata sandi tidak disimpan; tidak ada autentikasi server, email, atau nama pribadi yang dikumpulkan. Login berhasil menawarkan verifikasi pada setiap alias belum terverifikasi, dengan pilihan “Lewati untuk sekarang”.
 
 Verifikasi menampilkan kartu fiktif bawaan bertanda **CONTOH / TIDAK BERLAKU**, tanpa unggah dokumen atau input NIK. Statusnya:
 
@@ -76,19 +76,20 @@ node --test tests/*.test.mjs
 
 Tes unit mencakup format rupiah dan minimum sewa, biaya/deposit/ongkir, tanggal inklusif dan bentrok jadwal, batas/format foto, data checkout kosong, batas akses konfirmasi/publikasi, kelayakan dan duplikasi ulasan, penyaringan data pribadi, data penyimpanan rusak, serta penggabungan perubahan tab.
 
-Untuk alur browser, jalankan server di terminal pertama:
+Untuk alur browser di Windows, jalankan server di terminal pertama:
 
-```bash
-python3 -m http.server 5500 --directory dist
+```powershell
+npm.cmd run serve
 ```
 
 Lalu di terminal lain:
 
-```bash
-python3 tests/browser_smoke.py
+```powershell
+npm.cmd run test:browser
+npm.cmd run test:visual
 ```
 
-Python Playwright dan Chromium dipakai sebagai alat uji opsional; keduanya telah tersedia di lingkungan pengujian ini dan tidak menjadi dependensi aplikasi. Script memakai Chromium di `/usr/bin/chromium` secara default. Untuk lingkungan lain, sesuaikan `REOUTFIT_CHROMIUM`; alamat server dapat diganti lewat `REOUTFIT_TEST_URL`.
+Jalankan dahulu Chrome/Edge dengan profil uji terpisah dan port CDP9222 sesuai README. Suite memakai WebSocket bawaan Node22+, tanpa Playwright. `REOUTFIT_TEST_URL` dan `REOUTFIT_CDP_URL` mengubah alamat server/browser. Script Python lama tetap menjadi referensi dan belum disesuaikan untuk UI baru; tidak dijalankan pada audit Windows ini.
 
 Skenario browser yang tersedia meliputi katalog tamu, ringkasan biaya, daftar/masuk, verifikasi ditunda/ditolak/dicoba ulang, pembatalan yang mempertahankan isian, klik konfirmasi ganda, kegagalan penyimpanan, draft listing dan foto invalid, siklus sewa dua peran, ulasan, pemisahan akun dan chat antar-alias, reload, tampilan mobile, keyboard, dan preferensi pengurangan animasi. Setiap tes memakai konteks browser terpisah dan data dummy. Daftar ini menjelaskan cakupan script; status lulus mengikuti hasil eksekusi, bukan janji bahwa semua perangkat atau browser sudah diperiksa.
 
@@ -98,6 +99,6 @@ Aturan, verifikasi, dan pembatasan peran saat ini berjalan di browser dan dapat 
 
 Berikutnya diperlukan database dan penyimpanan foto, kebijakan penanganan data identitas, pembayaran sandbox, verifikasi callback pembayaran, serta proses sengketa/refund yang jelas. Salin harga dan syarat ke pesanan agar perubahan listing tidak mengubah transaksi lama. Jangan menyimpan API secret dalam JavaScript publik. Saat ini tidak ada backend atau kredensial API yang diperlukan.
 
-Hosting tetap statis: Vercel preset **Other**, output `dist`, tanpa build. Untuk deployment manual dari GitHub, pilih branch `feat/demo-rental-flow` pada proyek Vercel yang terhubung ke repository. Cara ini tidak memerlukan token Vercel di cloud environment atau kode aplikasi. Verifikasi URL hasil deployment dan pastikan modul, foto, serta alur pemesanan dapat dimuat; tes lokal tidak membuktikan deployment berhasil.
+Hosting tetap statis: Vercel preset **Other**, install `npm ci`, build `npm run build`, output `dist`. Branch kerja `feat/ui-polish`; `vercel.json` mencatat konfigurasi. Tidak ada deployment yang dilakukan dalam perubahan ini. Verifikasi URL terbit setelah deployment terpisah; tes lokal tidak membuktikan deployment eksternal berhasil.
 
-Video referensi telah ditinjau sebagai masukan; file PNG logo asli belum tersedia sebagai berkas proyek sehingga integrasinya belum dapat diklaim. Masukan wawancara awal terbatas pada 4 calon customer dan 1 calon seller; perbandingan dengan Facebook dan klaim tiga klik perlu pengujian pengguna tersendiri.
+Logo kaus senyum dari `logos.png` dan aset ZIP telah tersedia di `dist/assets/brand`. Sumber foto/ikon dicatat di `docs/ASET-DAN-UI.md`. Masukan wawancara awal terbatas pada 4 calon customer dan 1 calon seller; perbandingan dengan Facebook dan klaim tiga klik perlu pengujian pengguna tersendiri.

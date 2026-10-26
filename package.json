@@ -1,0 +1,31 @@
+{
+  "name": "reoutfit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MVP penyewaan outfit dengan HTML, vanilla JavaScript, dan Tailwind CSS.",
+  "scripts": {
+    "prebuild": "node scripts/prepare-vendor.mjs",
+    "prewatch": "node scripts/prepare-vendor.mjs",
+    "build": "tailwindcss -i ./styles/tailwind.css -o ./dist/styles.css --minify",
+    "watch": "tailwindcss -i ./styles/tailwind.css -o ./dist/styles.css --watch",
+    "dev": "npm run watch",
+    "serve": "python -m http.server 8000 --bind 127.0.0.1 --directory dist",
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "node tests/ui-regression.mjs",
+    "test:browser:extra": "node tests/ui-extra-regression.mjs",
+    "test:motion": "node tests/motion-regression.mjs",
+    "test:visual": "node tests/capture-ui.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "@tailwindcss/forms": "^0.5.11",
+    "tailwindcss": "^4.3.3"
+  },
+  "dependencies": {
+    "gsap": "^3.15.0",
+    "preline": "^4.2.0"
+  }
+}
