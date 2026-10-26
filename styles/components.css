@@ -1,0 +1,114 @@
+/* Shared components are generated from Tailwind utilities. Utilities in templates
+   have the final cascade layer, above these gradual-migration adapters. */
+.page-shell { @apply mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-12; }
+.btn { @apply inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-berry bg-berry px-5 py-3 text-sm font-semibold leading-snug text-white shadow-xs; transition: background-color var(--duration-micro), border-color var(--duration-micro), transform var(--duration-micro); }
+.btn:hover { @apply border-berry-dark bg-berry-dark text-white; }
+.btn:active { transform: translateY(1px) scale(.985); }
+.btn svg { @apply transition-transform duration-200; }
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .btn:hover svg[data-icon='arrow-up-right'] { @apply -translate-y-0.5 translate-x-0.5; }
+  .btn:hover svg[data-icon='send'] { @apply -translate-y-0.5 translate-x-0.5; }
+  .btn:hover svg[data-icon='plus'] { @apply rotate-90; }
+  .file-dropzone:hover .file-picker-icon { @apply -translate-y-1; }
+}
+.btn.secondary { @apply border-border bg-paper text-ink; }
+.btn.secondary:hover { @apply border-berry bg-pink-soft text-berry; }
+.btn.ghost { @apply border-transparent bg-transparent text-berry shadow-none; }
+.btn.ghost:hover { @apply bg-pink-soft; }
+.btn.full { @apply w-full; }
+.icon-btn { @apply inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-border bg-paper text-ink; transition: background-color var(--duration-micro), transform var(--duration-micro); }
+.icon-btn:hover { @apply bg-pink-soft text-berry; }
+.icon-btn:active { transform: scale(.96); }
+.muted { @apply text-muted; }
+.pink { @apply text-berry; }
+.small { @apply text-sm; }
+.num { @apply tabular-nums; }
+.panel { @apply mb-5 min-w-0 rounded-panel border border-border bg-paper p-5 shadow-soft sm:p-6; }
+.panel h2 { @apply mb-5 text-2xl; }
+.panel h3 { @apply mb-3; }
+.panel > :last-child { @apply mb-0; }
+.form-grid { @apply grid grid-cols-1 gap-5 sm:grid-cols-2; }
+.form-grid .span2 { @apply sm:col-span-2; }
+.field-error { @apply text-sm text-red-800; }
+.field-error:not(:empty) { @apply mt-2; }
+.glass { @apply border border-border bg-pink-soft shadow-glass; }
+@supports (backdrop-filter: blur(16px)) {
+  .glass { background: color-mix(in srgb, var(--color-pink-soft) 65%, transparent); backdrop-filter: blur(16px); }
+}
+#header { @apply relative z-30 border-b border-border bg-canvas; }
+.site-nav { @apply mx-auto grid w-full max-w-[1440px] grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 sm:px-8 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-12; }
+.brand { @apply inline-flex w-fit shrink-0 items-center gap-2; }
+.brand .brand-mark { @apply size-10 shrink-0 object-contain; }
+.brand-name { @apply text-3xl leading-none font-bold tracking-tighter text-berry; }
+.nav-pill { @apply col-span-2 row-start-2 flex items-center justify-center gap-1 rounded-full p-1 text-sm font-semibold lg:col-span-1 lg:col-start-2 lg:row-start-1; }
+.nav-pill a { @apply inline-flex min-h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full px-3 py-2 text-muted sm:flex-none sm:px-5; transition: background-color var(--duration-micro), color var(--duration-micro), transform var(--duration-micro); }
+.nav-pill a:hover { @apply bg-paper/75 text-berry; }
+.nav-pill a:active { transform: scale(.97); }
+.nav-pill a.active { @apply bg-berry text-white shadow-xs; }
+.nav-actions { @apply col-start-2 row-start-1 flex min-w-0 items-center justify-end gap-2 lg:col-start-3; }
+.nav-account { @apply inline-flex min-h-12 min-w-0 max-w-48 items-center gap-2 rounded-full border border-border bg-paper px-3 py-2 text-sm font-semibold; }
+.nav-account span { @apply hidden truncate sm:block; }
+.nav-account:hover { @apply bg-pink-soft text-berry; }
+.nav-actions [aria-current='page'] { @apply border-berry bg-pink-soft text-berry; }
+.site-footer { @apply mt-16 border-t border-border bg-pink-soft/35 py-10 sm:py-12; }
+.footer-inner { @apply grid gap-8 sm:grid-cols-[1fr_auto]; }
+.footer-links { @apply flex list-none flex-col items-start gap-3 p-0 text-sm; }
+.footer-links a { @apply inline-flex min-h-9 items-center text-muted hover:text-berry; }
+.file-dropzone { @apply relative mt-3 rounded-2xl border border-dashed border-border bg-canvas p-5 text-center; transition: background-color var(--duration-micro), border-color var(--duration-micro); }
+.file-dropzone.is-dragging { @apply border-berry bg-pink-soft; }
+.file-dropzone:focus-within { @apply border-berry ring-2 ring-pink-soft; }
+.file-native { @apply sr-only; }
+.file-picker-row { @apply mt-3 flex flex-col items-center justify-center gap-3; }
+.file-picker-icon { @apply flex size-11 items-center justify-center rounded-full bg-pink-soft text-berry transition-transform duration-200; }
+.upload-area { @apply rounded-2xl border border-dashed border-border bg-canvas p-5; }
+.upload-previews { @apply mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4; }
+.upload-previews img { @apply aspect-square h-auto w-full rounded-xl object-cover; }
+.upload-previews figcaption { @apply mt-2 text-xs text-muted break-words; }
+.listing-photo { @apply relative min-w-0; }
+.listing-photo .btn { @apply mt-2 min-h-9 w-full px-2 py-2 text-xs; }
+.photo-cover { @apply absolute top-2 left-2 rounded-full bg-paper px-2 py-1 text-xs font-semibold text-berry shadow-xs; }
+.chat-layout { @apply grid grid-cols-1 items-start gap-5 py-8 lg:grid-cols-[280px_minmax(0,1fr)]; }
+.chat-sidebar { @apply min-w-0 rounded-panel border border-border bg-paper p-4 shadow-soft; }
+.chat-list { @apply mt-5 flex list-none flex-col gap-2 p-0; }
+.chat-thread { @apply flex min-w-0 items-center gap-3 rounded-xl p-3 text-sm transition-colors hover:bg-canvas; }
+.chat-thread.active { @apply bg-pink-soft; }
+.chat-thread img { @apply h-14 w-11 shrink-0 rounded-lg object-cover; }
+.chat-content { @apply min-w-0; }
+.chat-outfit { @apply mb-4 flex flex-wrap items-center gap-4 rounded-2xl border border-border bg-paper p-4; }
+.chat-outfit > img { @apply h-20 w-16 rounded-xl object-cover; }
+.chat-outfit-info { @apply min-w-0 flex-1; }
+.chat-outfit h2 { @apply text-lg; }
+.chat-outfit p { @apply mt-1 text-sm text-muted; }
+.chat-demo-note { @apply mb-4 text-sm text-muted; }
+.chat-panel { @apply overflow-hidden rounded-panel border border-border bg-paper shadow-soft; }
+.chat-panel-heading { @apply border-b border-border px-5 py-4; }
+.chat-panel-heading h2 { @apply text-lg; }
+.chat-messages { @apply flex h-[400px] min-w-0 flex-col gap-4 overflow-y-auto bg-canvas/40 p-5; }
+.chat-message { @apply w-fit max-w-[88%] rounded-2xl bg-paper px-4 py-3 shadow-xs; }
+.chat-message.own { @apply self-end rounded-br-sm bg-berry text-white; }
+.chat-message.other { @apply self-start rounded-bl-sm border border-border; }
+.chat-message p { @apply whitespace-pre-wrap break-words; overflow-wrap: anywhere; }
+.chat-sender { @apply mb-1 block text-xs font-semibold; }
+.chat-message time { @apply mt-1 block text-right text-xs opacity-75; }
+.chat-empty { @apply m-auto max-w-xs py-12 text-center text-muted; }
+.chat-empty strong { @apply mb-2 block text-lg font-semibold text-ink; }
+.chat-compose { @apply border-t border-border p-5; }
+.chat-compose textarea { @apply mt-2 min-h-24; }
+.chat-compose-meta { @apply mt-2 flex justify-between gap-3 text-xs text-muted; }
+.chat-compose .btn { @apply mt-3 w-full sm:w-auto; }
+.chat-overview { @apply flex min-h-96 items-center justify-center rounded-panel border border-border bg-paper p-8 text-center; }
+.outfits { @apply grid grid-cols-1 gap-5 min-[420px]:grid-cols-2 xl:grid-cols-4; }
+.product { @apply relative flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-paper shadow-soft transition duration-200 hover:-translate-y-1 hover:border-berry/35 focus-within:border-berry; }
+.product-photo { @apply relative block aspect-[4/5] overflow-hidden bg-pink-soft/30; }
+.product-photo img { @apply h-full w-full transition-transform duration-400 group-hover:scale-[1.025]; }
+.product-body { @apply flex flex-1 flex-col items-start gap-2 p-4; }
+.product-body .btn { @apply mt-3; }
+.product-body svg { @apply size-4; }
+.catalog-layout { @apply grid grid-cols-1 items-start gap-6 pb-12 lg:grid-cols-[232px_minmax(0,1fr)]; }
+.catalog-layout .outfits { @apply xl:grid-cols-3; }
+.filters { @apply grid grid-cols-1 gap-4 rounded-panel border border-border bg-paper p-5 sm:grid-cols-2 lg:grid-cols-1; }
+.filter-head { @apply flex items-center justify-between gap-3 sm:col-span-2 lg:col-span-1; }
+.filter-head button { @apply min-h-10 px-2 text-sm text-berry underline underline-offset-4; }
+.search input { @apply mt-0; }
+.availability-mark svg, .legend-mark svg { @apply size-3; }
+@media (max-width: 390px) { .nav-pill a { @apply px-2 text-xs; } }

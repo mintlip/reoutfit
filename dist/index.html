@@ -6,9 +6,11 @@
 <meta name="theme-color" content="#a82f58">
 <meta name="description" content="Sewa dan sewakan outfit. Pilih ukuran, jadwal, dan lihat rincian biaya.">
 <title>reoutfit — Sewa outfit</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23a82f58'/%3E%3Ctext x='20' y='46' font-family='Arial' font-size='46' fill='white'%3Er%3C/text%3E%3C/svg%3E">
+<link rel="icon" href="assets/brand/reoutfit-mark.png" type="image/png">
+<link rel="alternate icon" href="assets/brand/favicon-32.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/brand/icon-192.png">
 <link rel="preload" href="assets/fonts/aileron/Aileron-Regular.woff" as="font" type="font/woff" crossorigin>
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=11">
 </head>
 <body>
 <a class="skip" href="#main">Lewati ke konten</a>
@@ -16,20 +18,24 @@
 </header>
 <main id="main" tabindex="-1">
 </main>
-<footer>
-<a class="logo" href="#/">reoutfit</a>
-<nav>
-<a href="#/panduan">Cara sewa</a>
-<a href="#/syarat">Syarat & deposit</a>
-<a href="#/merchant">Untuk pemilik outfit</a>
-</nav>
-<small>© 2026 reoutfit · Prototipe</small>
+<footer class="site-footer">
+<div class="page-shell footer-inner">
+<div class="space-y-4"><a class="brand" href="#/" aria-label="reoutfit, beranda"><img class="brand-mark" src="assets/brand/reoutfit-mark.png" alt="" width="213" height="213"><span class="brand-name">reoutfit</span></a>
+<p class="max-w-xs text-sm text-muted">Outfit untuk setiap cerita.<br>Sewa, pakai, kembalikan.</p></div>
+<nav aria-label="Informasi reoutfit"><ul class="footer-links">
+<li><a href="#/panduan">Cara sewa</a></li>
+<li><a href="#/syarat">Syarat & deposit</a></li>
+<li><a href="#/merchant">Untuk pemilik outfit</a></li>
+</ul></nav>
+<small class="text-xs text-muted sm:col-span-2">© 2026 reoutfit · Prototipe Venture Creation</small>
+</div>
 </footer>
 <div id="toast" role="status" aria-live="polite">
 </div>
 <dialog id="modal">
 </dialog>
-<script src="app.js?v=7">
+<script src="vendor/gsap.min.js"></script>
+<script type="module" src="app.js?v=11">
 </script>
 </body>
 </html>

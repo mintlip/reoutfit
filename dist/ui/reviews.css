@@ -1,0 +1,94 @@
+.outfit-reviews .review-demo-note {
+  margin-bottom: 12px;
+}
+
+.outfit-reviews .review-topline {
+  flex-wrap: wrap;
+}
+
+.outfit-reviews .review-comment {
+  margin-top: 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.review-owner-reply {
+  margin-top: 16px;
+  padding: 12px;
+  border-left: 2px solid var(--border);
+  background: var(--paper);
+}
+
+.review-dialog .rating-options span {
+  background: var(--paper);
+}
+
+.review-dialog .rating-options input:checked + span {
+  background: var(--pink-light);
+}
+
+.review-dialog .rating-options input:focus-visible + span {
+  outline: 3px solid var(--pink);
+  outline-offset: 4px;
+}
+
+.review-dialog .rating-options label {
+  position: relative;
+}
+
+.review-dialog .rating-options input:disabled + span {
+  cursor: wait;
+}
+
+.review-dialog .field-error {
+  color: var(--pink);
+  margin: 8px 0 12px;
+}
+
+.review-dialog .field-error:empty {
+  display: none;
+}
+
+.review-dialog [aria-invalid="true"] {
+  border-color: var(--pink);
+}
+
+.review-dialog #reviewComment {
+  margin-top: 8px;
+}
+
+.review-dialog #reviewCommentHint {
+  margin-top: 4px;
+  margin-bottom: 12px;
+}
+
+.review-dialog #closeReviewDialog {
+  flex-shrink: 0;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+@media (max-width: 480px) {
+  .review-dialog .rating-options {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .review-dialog .rating-options span {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .outfit-reviews .review-topline .muted {
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .review-dialog,
+  .review-dialog * {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

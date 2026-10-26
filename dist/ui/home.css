@@ -1,0 +1,108 @@
+/* Layout, type and colour use Tailwind utilities in home.mjs. These rules only
+   describe the carousel geometry and motion shared by its repeated slides. */
+.home-featured {
+  --featured-card-width: min(21rem, calc(100vw - 7rem));
+  --featured-card-gap: 1.25rem;
+}
+
+.featured-rail {
+  position: relative;
+  overflow: hidden;
+  padding-block: 1rem;
+  touch-action: pan-y pinch-zoom;
+}
+
+.featured-rail:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 4px;
+  border-radius: var(--radius-panel);
+}
+
+.featured-track {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--featured-card-gap);
+  transition: transform var(--duration-content, 380ms) cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+
+.featured-track.is-instant {
+  transition: none;
+}
+
+.featured-item {
+  width: var(--featured-card-width);
+  flex: 0 0 var(--featured-card-width);
+  min-width: 0;
+  transform: scale(.9);
+  opacity: .65;
+  transition: transform var(--duration-content, 380ms) ease, opacity var(--duration-content, 380ms) ease;
+}
+
+.featured-item.is-active {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.featured-photo {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.featured-photo img {
+  transition: transform var(--duration-content, 380ms) ease;
+}
+
+.featured-photo:hover img {
+  transform: scale(1.025);
+}
+
+.featured-dot span {
+  width: 1.5rem;
+  height: .375rem;
+  background: var(--color-muted);
+  border-radius: 999px;
+  opacity: .45;
+  transform: scaleX(.25);
+  transition: transform var(--duration-micro, 180ms) ease, opacity var(--duration-micro, 180ms) ease;
+}
+
+.featured-dot[aria-pressed='true'] span {
+  background: var(--color-berry);
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.featured-playback {
+  transition: transform var(--duration-micro, 180ms) ease;
+}
+
+.featured-playback svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (min-width: 48rem) {
+  .home-featured {
+    --featured-card-gap: 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .featured-track,
+  .featured-item,
+  .featured-photo img,
+  .featured-dot span,
+  .featured-playback {
+    transition: none;
+  }
+
+  .featured-photo:hover img {
+    transform: none;
+  }
+}
